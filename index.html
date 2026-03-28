@@ -184,8 +184,9 @@ body{
   flex:1;overflow-y:auto;
   padding:24px;
   font-size:.95rem;line-height:1.9;
-  white-space:pre-wrap;word-wrap:break-word;
+  white-space:normal;word-wrap:break-word;
 }
+.panel-body p{margin:0;text-indent:0}
 .panel-body:focus{outline:2px solid var(--accent);outline-offset:-2px;border-radius:4px}
 
 /* diff highlights */
@@ -871,7 +872,7 @@ function renderDiff(diff, side){
   var html = '';
   for(var k = 0; k < diff.length; k++){
     var d = diff[k];
-    var val = escapeHtml(d.value);
+    var val = escapeHtml(d.value).replace(/\n\n+/g, '</p><p style="margin-top:12px">').replace(/\n/g, '<br>');
     if(d.type === 'equal'){
       html += val;
     } else if(d.type === 'delete'){
@@ -1005,8 +1006,8 @@ proofreadBtn.addEventListener('click', function(){
   var diff = diffWords(text, revised);
 
   // Render panels
-  originalPanel.innerHTML = renderDiff(diff, 'left');
-  revisedPanel.innerHTML  = renderDiff(diff, 'right');
+  originalPanel.innerHTML = '<p>' + renderDiff(diff, 'left') + '</p>';
+  revisedPanel.innerHTML  = '<p>' + renderDiff(diff, 'right') + '</p>';
 
   // Update revised char count
   var revisedCharCount = document.getElementById('revisedCharCount');
