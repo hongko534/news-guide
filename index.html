@@ -333,11 +333,12 @@ body{
     <div class="compare-panels">
       <div class="panel panel-left">
         <div class="panel-header">원문</div>
-        <div class="panel-body" id="originalPanel"></div>
+        <div class="panel-body" id="originalPanel" spellcheck="false"></div>
       </div>
       <div class="panel">
         <div class="panel-header">수정본 (편집 가능)</div>
-        <div class="panel-body" id="revisedPanel" contenteditable="true"></div>
+        <div class="panel-body" id="revisedPanel" contenteditable="true" spellcheck="false"></div>
+        <div class="char-count" id="revisedCharCount" style="text-align:right;padding:6px 12px;font-size:.8rem;color:var(--text-muted);">0자</div>
       </div>
     </div>
     <div class="corrections-section" id="correctionsSection">
@@ -869,6 +870,15 @@ proofreadBtn.addEventListener('click', function(){
   // Render panels
   originalPanel.innerHTML = renderDiff(diff, 'left');
   revisedPanel.innerHTML  = renderDiff(diff, 'right');
+
+  // Update revised char count
+  var revisedCharCount = document.getElementById('revisedCharCount');
+  revisedCharCount.textContent = revisedPanel.innerText.length + '자';
+
+  // Live update on edit
+  revisedPanel.addEventListener('input', function() {
+    revisedCharCount.textContent = revisedPanel.innerText.length + '자';
+  });
 
   // Render stats and corrections list
   renderStats(lastResult.stats);
