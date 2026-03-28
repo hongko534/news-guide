@@ -19,6 +19,8 @@
   --accent-hover:#818cf8;
   --success:     #22c55e;
   --danger:      #ef4444;
+  --warning-color:#f59e0b;
+  --info-color:  #3b82f6;
   --diff-del-bg: rgba(239,68,68,.18);
   --diff-del-text:#fca5a5;
   --diff-ins-bg: rgba(34,197,94,.18);
@@ -55,7 +57,7 @@ body{
   line-height:1.7;
 }
 
-/* ─── Nav ─── */
+/* --- Nav --- */
 .nav{
   position:sticky;top:0;z-index:100;
   display:flex;align-items:center;gap:16px;
@@ -69,20 +71,6 @@ body{
   color:var(--accent);white-space:nowrap;
 }
 .nav-spacer{flex:1}
-.api-key-wrap{
-  display:flex;align-items:center;gap:8px;
-  font-size:.82rem;
-}
-.api-key-wrap label{color:var(--text-muted);white-space:nowrap}
-.api-key-input{
-  width:220px;padding:6px 10px;
-  border:1px solid var(--border);border-radius:var(--radius-sm);
-  background:var(--bg);color:var(--text);
-  font-size:.82rem;font-family:monospace;
-  transition:border var(--transition);
-}
-.api-key-input:focus{outline:none;border-color:var(--accent)}
-.api-key-status{font-size:.75rem;color:var(--text-muted)}
 .theme-btn{
   background:none;border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:6px 10px;cursor:pointer;color:var(--text);font-size:1rem;
@@ -90,12 +78,12 @@ body{
 }
 .theme-btn:hover{border-color:var(--accent);color:var(--accent)}
 
-/* ─── Screens ─── */
+/* --- Screens --- */
 .screen{display:none;animation:fadeIn .35s ease}
 .screen.active{display:flex;flex-direction:column}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-/* ─── Input Screen ─── */
+/* --- Input Screen --- */
 .input-screen{
   flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
@@ -132,9 +120,10 @@ body{
 .btn-primary:hover:not(:disabled){background:var(--accent-hover);transform:translateY(-1px)}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed}
 
-/* ─── Compare Screen ─── */
+/* --- Compare Screen --- */
 .compare-screen{
   flex:1;padding:0;min-height:calc(100vh - 57px);
+  display:flex;flex-direction:column;
 }
 .compare-toolbar{
   display:flex;align-items:center;gap:12px;
@@ -150,6 +139,20 @@ body{
 }
 .btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
 .toolbar-spacer{flex:1}
+.toolbar-stats{
+  font-size:.82rem;color:var(--text-muted);
+  display:flex;gap:12px;align-items:center;
+}
+.toolbar-stats .stat-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 10px;border-radius:12px;font-weight:600;font-size:.78rem;
+}
+.stat-badge.error{background:rgba(239,68,68,.15);color:var(--danger)}
+.stat-badge.warning{background:rgba(245,158,11,.15);color:var(--warning-color)}
+.stat-badge.info{background:rgba(59,130,246,.15);color:var(--info-color)}
+.stat-score{
+  font-weight:700;font-size:.88rem;
+}
 .copy-toast{
   position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);
   padding:10px 24px;border-radius:var(--radius-sm);
@@ -195,27 +198,79 @@ body{
   border-radius:3px;padding:0 2px;
 }
 
-/* ─── Loading ─── */
-.loading-overlay{
-  position:fixed;inset:0;z-index:200;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.55);
-  backdrop-filter:blur(4px);
-  opacity:0;pointer-events:none;
-  transition:opacity .3s;
+/* highlight for noAutoReplace warnings in original panel */
+.highlight-warn{
+  background:rgba(245,158,11,.2);
+  border-bottom:2px dashed var(--warning-color);
+  border-radius:2px;padding:0 2px;
+  cursor:help;
 }
-.loading-overlay.active{opacity:1;pointer-events:auto}
-.spinner{
-  width:40px;height:40px;
-  border:3px solid var(--border);
-  border-top-color:var(--accent);
-  border-radius:50%;
-  animation:spin .8s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{margin-top:16px;color:#fff;font-size:.95rem}
 
-/* ─── Error ─── */
+/* --- Corrections List --- */
+.corrections-section{
+  border-top:1px solid var(--border);
+  background:var(--bg-surface);
+  max-height:40vh;overflow-y:auto;
+}
+.corrections-header{
+  padding:12px 24px;
+  font-size:.88rem;font-weight:700;
+  color:var(--text);
+  border-bottom:1px solid var(--border);
+  background:var(--bg-elevated);
+  position:sticky;top:0;z-index:1;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.corrections-toggle{
+  background:none;border:none;color:var(--text-muted);cursor:pointer;
+  font-size:.82rem;padding:4px 8px;
+}
+.corrections-toggle:hover{color:var(--accent)}
+.corrections-list{
+  padding:0;margin:0;list-style:none;
+}
+.correction-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 24px;
+  border-bottom:1px solid var(--border);
+  font-size:.85rem;line-height:1.6;
+  transition:background .15s;
+}
+.correction-item:hover{background:var(--bg-elevated)}
+.correction-icon{
+  flex-shrink:0;width:22px;height:22px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:700;margin-top:2px;
+}
+.correction-icon.error{background:rgba(239,68,68,.2);color:var(--danger)}
+.correction-icon.warning{background:rgba(245,158,11,.2);color:var(--warning-color)}
+.correction-icon.info{background:rgba(59,130,246,.2);color:var(--info-color)}
+.correction-body{flex:1;min-width:0}
+.correction-change{margin-bottom:2px}
+.correction-change .original{
+  text-decoration:line-through;color:var(--diff-del-text);
+  background:var(--diff-del-bg);border-radius:3px;padding:0 3px;
+}
+.correction-change .arrow{color:var(--text-muted);margin:0 6px}
+.correction-change .suggested{
+  color:var(--diff-ins-text);background:var(--diff-ins-bg);
+  border-radius:3px;padding:0 3px;
+}
+.correction-reason{color:var(--text-muted);font-size:.8rem}
+.correction-category{
+  flex-shrink:0;font-size:.72rem;font-weight:600;
+  padding:2px 8px;border-radius:10px;
+  background:var(--bg-elevated);color:var(--text-muted);
+  white-space:nowrap;margin-top:2px;
+}
+.tag-manual{
+  display:inline-block;font-size:.7rem;font-weight:600;
+  padding:1px 6px;border-radius:8px;
+  background:rgba(245,158,11,.15);color:var(--warning-color);
+  margin-left:6px;
+}
+
+/* --- Error --- */
 .error-msg{
   margin-top:12px;padding:12px 16px;
   background:rgba(239,68,68,.1);
@@ -225,14 +280,18 @@ body{
   max-width:720px;width:100%;
 }
 
-/* ─── Responsive ─── */
+/* --- No Issues --- */
+.no-issues{
+  padding:40px 24px;text-align:center;color:var(--text-muted);font-size:.95rem;
+}
+
+/* --- Responsive --- */
 @media(max-width:768px){
   .nav{padding:10px 16px;flex-wrap:wrap}
-  .api-key-wrap{order:10;width:100%;margin-top:8px}
-  .api-key-input{flex:1}
   .compare-panels{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
   .panel-left{border-right:none;border-bottom:1px solid var(--border)}
   .input-screen{padding:32px 16px}
+  .corrections-section{max-height:50vh}
 }
 </style>
 </head>
@@ -242,18 +301,13 @@ body{
 <nav class="nav">
   <div class="nav-logo">기사 교정기</div>
   <div class="nav-spacer"></div>
-  <div class="api-key-wrap">
-    <label>API Key</label>
-    <input type="password" class="api-key-input" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
-    <span class="api-key-status" id="apiKeyStatus"></span>
-  </div>
   <button class="theme-btn" id="themeToggle" title="테마 전환">&#9788;</button>
 </nav>
 
 <!-- Input Screen -->
 <main class="screen active" id="inputScreen">
   <div class="input-screen">
-    <h1>AI 기사 교정</h1>
+    <h1>기사 교정</h1>
     <p>기사 초안을 입력하고 교정 버튼을 누르세요</p>
     <div class="input-area">
       <textarea class="article-textarea" id="articleInput"
@@ -272,6 +326,7 @@ body{
   <div class="compare-screen">
     <div class="compare-toolbar">
       <button class="btn-secondary" id="backBtn">&#8592; 다시 교정하기</button>
+      <div class="toolbar-stats" id="toolbarStats"></div>
       <div class="toolbar-spacer"></div>
       <button class="btn-secondary" id="copyBtn">수정본 복사</button>
     </div>
@@ -285,14 +340,15 @@ body{
         <div class="panel-body" id="revisedPanel" contenteditable="true"></div>
       </div>
     </div>
+    <div class="corrections-section" id="correctionsSection">
+      <div class="corrections-header">
+        <span id="correctionsTitle">교정 사항</span>
+        <button class="corrections-toggle" id="correctionsToggle">접기</button>
+      </div>
+      <ul class="corrections-list" id="correctionsList"></ul>
+    </div>
   </div>
 </main>
-
-<!-- Loading -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="spinner"></div>
-  <div class="loading-text">AI가 기사를 교정하고 있습니다...</div>
-</div>
 
 <!-- Copy Toast -->
 <div class="copy-toast" id="copyToast">클립보드에 복사되었습니다</div>
@@ -301,208 +357,283 @@ body{
 (function(){
 'use strict';
 
-// ===== AI System Prompt =====
-const AI_SYSTEM_PROMPT = `수정된 기사 전문만 출력하세요. 설명, 분석, 주석은 포함하지 마세요. 수정이 필요 없는 부분은 원문 그대로 유지하세요.
+// =============================================================
+// 규칙 기반 분석 엔진 (engine.js 인라인)
+// =============================================================
 
-당신은 신문사의 수석 교열 기자입니다. 아래 "기사 수정 가이드"를 숙지한 뒤, 신입 기자가 작성한 기사 초안을 검토하고 수정해주세요.
+const rules = [
+  // 1. 맞춤법/표기 (spelling)
+  { pattern: /않된다/g, replacement: '안 된다', category: 'spelling', reason: "'안'은 부사('아니'의 줄임), '않'은 보조 용언('아니하'의 줄임)입니다.", severity: 'error' },
+  { pattern: /않되/g, replacement: '안 되', category: 'spelling', reason: "'안'은 부사('아니'의 줄임), '않'은 보조 용언('아니하'의 줄임)입니다.", severity: 'error' },
+  { pattern: /돼었/g, replacement: '되었', category: 'spelling', reason: "'돼'는 '되어'의 줄임말입니다. '되어었다'는 성립하지 않습니다.", severity: 'error' },
+  { pattern: /들어나/g, replacement: '드러나', category: 'spelling', reason: "'드러나다'가 표준 표기입니다. '들어나다'는 존재하지 않는 단어입니다.", severity: 'error' },
+  { pattern: /어떻해/g, replacement: '어떡해', category: 'spelling', reason: "'어떠하게 해'를 축약한 형태가 '어떡해'입니다.", severity: 'error' },
+  { pattern: /웬지/g, replacement: '왠지', category: 'spelling', reason: "'왠지'는 '왜인지'의 준말입니다. '웬'은 '어찌 된'이라는 다른 뜻입니다.", severity: 'error' },
+  { pattern: /촛점/g, replacement: '초점', category: 'spelling', reason: "사이시옷이 적용되지 않는 한자어 결합입니다.", severity: 'error' },
+  { pattern: /알맞는/g, replacement: '알맞은', category: 'spelling', reason: "'알맞다'는 형용사이므로 관형사형은 '-은'입니다.", severity: 'error' },
+  { pattern: /회계년도/g, replacement: '회계연도', category: 'spelling', reason: "표준어는 '연도'입니다. '년도'는 비표준입니다.", severity: 'error' },
+  { pattern: /어의없/g, replacement: '어이없', category: 'spelling', reason: "'어이없다'가 표준어입니다. '어의(御醫)'는 다른 단어입니다.", severity: 'error' },
+  { pattern: /모자른/g, replacement: '모자란', category: 'spelling', reason: "기본형이 '모자라다'이므로 '모자란'이 올바릅니다.", severity: 'error' },
+  { pattern: /담배를 피다/g, replacement: '담배를 피우다', category: 'spelling', reason: "'피다'는 자동사, '피우다'는 타동사입니다. 목적어가 있으므로 '피우다'를 씁니다.", severity: 'error' },
 
----
+  // 1-2. 외래어 표기
+  { pattern: /컨텐츠/g, replacement: '콘텐츠', category: 'spelling', reason: "영어 'con-'은 '콘'으로 표기합니다 (국립국어원 외래어 표기법).", severity: 'error' },
+  { pattern: /메세지/g, replacement: '메시지', category: 'spelling', reason: "영어 [sɪdʒ]는 '시'에 가깝습니다 (외래어 표기법).", severity: 'error' },
+  { pattern: /악세사리/g, replacement: '액세서리', category: 'spelling', reason: "일본어식 발음 영향을 배제한 표준 표기입니다.", severity: 'error' },
+  { pattern: /시물레이션/g, replacement: '시뮬레이션', category: 'spelling', reason: "영어 'si-mu-'는 '시뮬'이 표준입니다.", severity: 'error' },
 
-# 기자를 위한 기사 수정 가이드
+  // 1-3. 띄어쓰기
+  { pattern: /첫번째/g, replacement: '첫 번째', category: 'spelling', reason: "관형사 + 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /두번째/g, replacement: '두 번째', category: 'spelling', reason: "관형사 + 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /세번째/g, replacement: '세 번째', category: 'spelling', reason: "관형사 + 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /다음주/g, replacement: '다음 주', category: 'spelling', reason: "'다음'과 '주'는 별개의 단어입니다.", severity: 'error' },
+  { pattern: /다음달/g, replacement: '다음 달', category: 'spelling', reason: "'다음'과 '달'은 별개의 단어입니다.", severity: 'error' },
+  { pattern: /이틀만에/g, replacement: '이틀 만에', category: 'spelling', reason: "시간 경과의 의존명사 '만'은 띄어 씁니다.", severity: 'error' },
+  { pattern: /(\d+일)만에/g, replacement: '$1 만에', category: 'spelling', reason: "시간 경과의 의존명사 '만'은 띄어 씁니다.", severity: 'error' },
 
-> 이 가이드는 신문사 신입 기자들이 기사를 작성하고 수정할 때 참고할 수 있도록, 실제 언론 현장에서 발생한 수정 사례들을 체계적으로 정리한 것입니다. 각 사례에는 수정 전/후 비교와 수정 이유를 포함하여 왜 그렇게 고쳐야 하는지를 이해할 수 있게 했습니다.
+  // 1-4. 유사어 혼동
+  { pattern: /입맛이 땡/g, replacement: '입맛이 당', category: 'spelling', reason: "'당기다'가 표준어입니다. '땡기다'는 비표준입니다.", severity: 'error' },
 
----
+  // 2. 표현/문체 (expression)
+  // 2-1. 번역체 표현
+  { pattern: /에 있어서?\b/g, replacement: '', category: 'expression', reason: "번역체 표현입니다. 삭제하거나 적절한 조사로 대체하세요. (영어 'in ~ing' / 일본어 '~において' 직역)", severity: 'warning', noAutoReplace: true },
+  { pattern: /으?로부터 /g, replacement: '에게서 ', category: 'expression', reason: "'~로부터'는 영어 'from'의 직역입니다. '~에게서'가 자연스럽습니다.", severity: 'warning' },
+  { pattern: /에 대하여/g, replacement: '을', category: 'expression', reason: "'~에 대하여'는 영어 'about'의 직역입니다. 조사로 대체하세요.", severity: 'warning', noAutoReplace: true },
+  { pattern: /에 대한 /g, replacement: '', category: 'expression', reason: "'~에 대한'은 번역체입니다. 조사 '의' 또는 직접 연결로 대체하세요.", severity: 'warning', noAutoReplace: true },
+  { pattern: /에 의해 /g, replacement: '', category: 'expression', reason: "'~에 의해'는 영어 수동태 직역입니다. 능동문으로 전환하세요.", severity: 'warning', noAutoReplace: true },
+  { pattern: /의 경우[,\s]/g, replacement: '', category: 'expression', reason: "'~의 경우'는 영어 'in the case of' 직역입니다. '~은/는'으로 대체하세요.", severity: 'warning', noAutoReplace: true },
 
-## 제1장: 문장과 표현
+  // 2-2. 이중 피동
+  { pattern: /잊혀지/g, replacement: '잊히', category: 'expression', reason: "이중 피동입니다. '잊다→잊히다'가 올바른 피동형입니다.", severity: 'error' },
+  { pattern: /쓰여지/g, replacement: '쓰이', category: 'expression', reason: "이중 피동입니다. '쓰다→쓰이다'가 올바른 피동형입니다.", severity: 'error' },
+  { pattern: /작성되어지/g, replacement: '작성되', category: 'expression', reason: "이중 피동입니다. '-되다'에 '-어지다'가 중복되었습니다.", severity: 'error' },
+  { pattern: /불리우/g, replacement: '불리', category: 'expression', reason: "이중 피동입니다. '부르다→불리다'가 올바른 형태입니다.", severity: 'error' },
+  { pattern: /만들어지/g, replacement: '만들', category: 'expression', reason: "이중 피동입니다. 능동문으로 전환하는 것을 권장합니다.", severity: 'info', noAutoReplace: true },
 
-기사의 기본 단위는 문장이다. 아무리 좋은 취재를 해도 문장이 정확하지 않으면 독자에게 제대로 전달되지 않는다. 이 장에서는 신입 기자가 가장 자주 범하는 문장 수준의 오류를 다룬다.
+  // 2-3. 불필요한 사동 '-시키다'
+  { pattern: /입금시키/g, replacement: '입금하', category: 'expression', reason: "과도한 사동 표현입니다. '-하다'로 충분합니다.", severity: 'warning' },
+  { pattern: /활성화시키/g, replacement: '활성화하', category: 'expression', reason: "과도한 사동 표현입니다. '-하다'로 충분합니다.", severity: 'warning' },
+  { pattern: /소개시켜/g, replacement: '소개해', category: 'expression', reason: "과도한 사동 표현입니다. '-하다'로 충분합니다.", severity: 'warning' },
+  { pattern: /감소시키/g, replacement: '줄이', category: 'expression', reason: "과도한 사동 표현입니다. '줄이다'가 자연스럽습니다.", severity: 'warning' },
+  { pattern: /증가시키/g, replacement: '늘리', category: 'expression', reason: "과도한 사동 표현입니다. '늘리다'가 자연스럽습니다.", severity: 'warning' },
+  { pattern: /변화시키/g, replacement: '바꾸', category: 'expression', reason: "과도한 사동 표현입니다. '바꾸다'가 자연스럽습니다.", severity: 'warning' },
 
-### 1.1 맞춤법과 띄어쓰기
+  // 2-4. 중복 표현
+  { pattern: /과반수 이상/g, replacement: '과반수', category: 'expression', reason: "'과반수'가 이미 '절반을 넘는 수'를 뜻하므로 '이상'은 중복입니다.", severity: 'warning' },
+  { pattern: /옥상 위에서/g, replacement: '옥상에서', category: 'expression', reason: "'옥상'이 이미 건물 꼭대기를 뜻하므로 '위에서'는 중복입니다.", severity: 'warning' },
+  { pattern: /처음 첫/g, replacement: '첫', category: 'expression', reason: "'처음'과 '첫'은 같은 의미이므로 중복입니다.", severity: 'warning' },
+  { pattern: /역전앞/g, replacement: '역 앞', category: 'expression', reason: "'역전(驛前)'이 이미 '역 앞'의 뜻이므로 중복입니다.", severity: 'warning' },
+  { pattern: /거의 대부분/g, replacement: '대부분', category: 'expression', reason: "'거의'와 '대부분'은 의미가 중복됩니다.", severity: 'warning' },
+  { pattern: /모든 사람들/g, replacement: '모든 사람', category: 'expression', reason: "'모든'이 이미 복수를 나타내므로 '들'은 불필요합니다.", severity: 'warning' },
 
-기사의 신뢰는 맞춤법에서 시작된다. 맞춤법 오류가 있는 기사는 내용의 정확성까지 의심받는다.
+  // 2-5. 진행형 남용
+  { pattern: /하고 있는 중이/g, replacement: '하고 있', category: 'expression', reason: "'~하고 있는 중'은 이중 진행 표현입니다.", severity: 'warning' },
 
-#### 자주 틀리는 맞춤법
+  // 3. 정확성/윤리 (ethics)
+  // 3-1. 차별 표현 -- 성차별
+  { pattern: /여류 /g, replacement: '', category: 'ethics', reason: "'여류'는 남성형을 기본으로 여성형을 파생시킨 성차별 표현입니다. 성별 구분 없이 직함만 쓰세요.", severity: 'error', noAutoReplace: true },
+  { pattern: /여기자/g, replacement: '기자', category: 'ethics', reason: "'여기자'는 '기자는 남자'라는 전제를 내포한 성차별 표현입니다.", severity: 'warning' },
+  { pattern: /미망인/g, replacement: '배우자', category: 'ethics', reason: "'미망인(未亡人)'은 '아직 죽지 못한 사람'이라는 뜻으로 차별적 표현입니다.", severity: 'error' },
 
-- 않된다 → 안 된다: '안'은 '아니'의 줄임말(부사). '않'은 '아니하'의 줄임말(보조 용언).
-- 돼었다 → 되었다: '돼'는 '되어'의 줄임말. '되어었다'는 성립하지 않음.
-- 들어나다 → 드러나다: '드러나다'가 표준 표기. '들어나다'는 존재하지 않는 단어.
-- 어떻해 → 어떡해: '어떠하게 해'를 축약한 형태가 '어떡해'.
-- 웬지 → 왠지: '왠지'는 '왜인지'의 준말. '웬'은 '어찌 된'이라는 다른 뜻.
-- 촛점 → 초점: 사이시옷이 적용되지 않는 한자어 결합.
-- 알맞는 → 알맞은: '알맞다'는 형용사이므로 관형사형은 '-은'. '-는'은 동사에 사용.
-- 회계년도 → 회계연도: 표준어는 '연도'. '년도'는 비표준.
+  // 3-2. 차별 표현 -- 장애인
+  { pattern: /장애우/g, replacement: '장애인', category: 'ethics', reason: "'장애우'는 비장애인 입장에서 타자화하는 동정적 표현입니다.", severity: 'error' },
+  { pattern: /정신지체/g, replacement: '지적장애', category: 'ethics', reason: "2008년 법 개정으로 '지적장애'로 용어가 변경되었습니다.", severity: 'error' },
+  { pattern: /눈먼 돈/g, replacement: '주인 없는 돈', category: 'ethics', reason: "시각장애를 비하하는 표현입니다.", severity: 'error' },
+  { pattern: /절름발이/g, replacement: '불완전한', category: 'ethics', reason: "지체장애를 비하하는 표현입니다.", severity: 'error' },
+  { pattern: /장애를 앓/g, replacement: '장애가 있', category: 'ethics', reason: "장애는 질병이 아닙니다. '앓다' 대신 '있다'를 사용하세요.", severity: 'error' },
+  { pattern: /결정 장애/g, replacement: '우유부단', category: 'ethics', reason: "장애를 부정적 비유로 사용하는 표현입니다.", severity: 'warning' },
 
-#### 자주 틀리는 띄어쓰기
+  // 3-3. 차별 표현 -- 이주민/지역
+  { pattern: /불법체류자/g, replacement: '미등록 이주민', category: 'ethics', reason: "'불법'이 인간 자체를 규정하는 차별적 표현입니다.", severity: 'error' },
 
-- 첫번째 → 첫 번째: 관형사 + 의존명사는 띄어 쓴다.
-- 다음주 → 다음 주: '다음'과 '주'는 별개의 단어.
-- 이틀만에 → 이틀 만에: 시간 경과의 의존명사 '만'은 띄어 쓴다.
-- 간지 5년 → 간 지 5년: 시간 경과의 의존명사 '지'는 앞말과 띄어 쓴다.
-- 이틀 간의 → 이틀간의: 기간을 나타내는 '간'은 접미사이므로 붙여 쓴다.
-- 기업간 경쟁 → 기업 간 경쟁: 관계를 나타내는 '간'은 의존명사이므로 띄어 쓴다.
-- 이것 뿐이다 → 이것뿐이다: 명사 뒤의 '뿐'은 붙여 쓴다.
+  // 3-4. 선정적/과장 표현
+  { pattern: /충격[!！\s,]/g, replacement: '', category: 'ethics', reason: "'충격'은 근거 없는 감정적/선정적 표현입니다. 구체적 사실로 대체하세요.", severity: 'warning', noAutoReplace: true },
+  { pattern: /역대급/g, replacement: '', category: 'ethics', reason: "'역대급'은 과장 표현입니다. 구체적 수치로 대체하세요.", severity: 'warning', noAutoReplace: true },
+  { pattern: /경악/g, replacement: '', category: 'ethics', reason: "'경악'은 선정적 표현입니다. 객관적 서술로 대체하세요.", severity: 'warning', noAutoReplace: true },
 
-> **팁**: '만'과 '간'은 맥락에 따라 붙여 쓰기/띄어 쓰기가 달라진다.
+  // 3-5. 모호한 출처
+  { pattern: /업계에서는/g, replacement: '', category: 'ethics', reason: "모호한 출처입니다. 구체적 인물명, 직책, 소속을 밝히세요.", severity: 'info', noAutoReplace: true },
+  { pattern: /전문가들은/g, replacement: '', category: 'ethics', reason: "모호한 출처입니다. 구체적 전문가의 이름과 소속을 밝히세요.", severity: 'info', noAutoReplace: true },
+  { pattern: /관계자에 따르면/g, replacement: '', category: 'ethics', reason: "모호한 출처입니다. 구체적 인물명과 직책을 밝히세요.", severity: 'info', noAutoReplace: true },
+];
 
-#### 자주 틀리는 외래어 표기
+function checkStructure(text) {
+  const corrections = [];
+  const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
 
-- 컨텐츠 → 콘텐츠: 영어 'con-'은 '콘'으로 표기
-- 메세지 → 메시지: 영어 [sɪdʒ]는 '시'에 가까움
-- 악세사리 → 액세서리: 일본어식 발음 영향 배제
-- 시물레이션 → 시뮬레이션: 영어 'si-mu-'는 '시뮬'이 표준
+  if (paragraphs.length > 0) {
+    const firstParagraph = paragraphs[0].trim();
+    const firstSentenceMatch = firstParagraph.match(/^[^.!?。]*[.!?。]/);
+    const firstSentence = firstSentenceMatch ? firstSentenceMatch[0] : firstParagraph;
+    const cleanSentence = firstSentence.replace(/\s+/g, '');
 
----
+    if (cleanSentence.length > 60) {
+      corrections.push({
+        category: 'structure',
+        original: firstSentence.substring(0, 50) + '...',
+        suggested: '리드를 60자 이내로 줄이세요',
+        reason: '리드(첫 문장)가 ' + cleanSentence.length + '자입니다. 60자 이내가 적정합니다. 핵심만 전달하고 세부 사항은 본문에서 서술하세요.',
+        startIndex: 0,
+        endIndex: firstSentence.length,
+        severity: 'warning',
+        noAutoReplace: true
+      });
+    }
 
-### 1.2 비문과 주술 호응
+    if (/[?？]/.test(firstSentence) || /나요|습니까|입니까|을까요|ㄹ까요|는가\?/.test(firstSentence)) {
+      corrections.push({
+        category: 'structure',
+        original: firstSentence.substring(0, 50) + (firstSentence.length > 50 ? '...' : ''),
+        suggested: '질문형 대신 사실을 직접 전달하는 리드로 바꾸세요',
+        reason: '독자는 뉴스를 읽으러 왔지 퀴즈를 풀러 온 것이 아닙니다. 질문형 리드는 지양합니다.',
+        startIndex: 0,
+        endIndex: firstSentence.length,
+        severity: 'warning',
+        noAutoReplace: true
+      });
+    }
+  }
 
-비문은 문법적으로 완결되지 않은 문장이다. 기사에서 가장 흔한 비문은 주술 호응 오류다.
+  paragraphs.forEach(function(para) {
+    const sentences = para.split(/[.!?。]\s*/).filter(function(s){ return s.trim().length > 0; });
+    if (sentences.length > 5) {
+      const paraStart = text.indexOf(para);
+      corrections.push({
+        category: 'structure',
+        original: para.substring(0, 50) + '...',
+        suggested: '단락을 2~3문장 단위로 나누세요',
+        reason: '이 단락이 ' + sentences.length + '문장으로 너무 깁니다. 신문 기사의 단락은 2~3문장이 적정합니다.',
+        startIndex: paraStart >= 0 ? paraStart : 0,
+        endIndex: paraStart >= 0 ? paraStart + para.length : para.length,
+        severity: 'warning',
+        noAutoReplace: true
+      });
+    }
+  });
 
-- 사례: "기계를 이용할 때의 장점은 힘이 덜 든다." → "기계를 이용할 때의 장점은 힘이 덜 든다는 것이다."
-- 사례: '이유는 ~때문이다' 호응, '접수하다'는 받는 쪽이 주어일 때 사용
-- 원칙: 문장을 쓴 뒤 주어를 찾고, 서술어가 그 주어에 호응하는지 확인한다.
+  const sentences = text.split(/(?<=[.!?。])\s+/);
+  sentences.forEach(function(sentence) {
+    if (/에 따르면/.test(sentence)) {
+      if (!/다고\s*(한다|밝혔다|전했다|말했다|설명했다|보도했다|발표했다|알려졌다|전해졌다)/.test(sentence) &&
+          !/라고\s*(한다|밝혔다|전했다|말했다|설명했다|보도했다|발표했다)/.test(sentence)) {
+        var sIdx = text.indexOf(sentence);
+        corrections.push({
+          category: 'structure',
+          original: sentence.substring(0, 50) + (sentence.length > 50 ? '...' : ''),
+          suggested: "문장 끝을 '~다고 한다/밝혔다' 형태로 호응시키세요",
+          reason: "'~에 따르면'으로 시작한 문장은 '~다고 한다/밝혔다'로 끝나야 호응이 맞습니다.",
+          startIndex: sIdx >= 0 ? sIdx : 0,
+          endIndex: sIdx >= 0 ? sIdx + sentence.length : sentence.length,
+          severity: 'warning',
+          noAutoReplace: true
+        });
+      }
+    }
+  });
 
----
+  return corrections;
+}
 
-### 1.3 중복 표현과 군더더기
+function analyzeArticle(text) {
+  if (!text || text.trim().length === 0) {
+    return {
+      corrections: [],
+      stats: { totalIssues: 0, byCategory: { spelling: 0, expression: 0, structure: 0, ethics: 0 }, score: 100 }
+    };
+  }
 
-- 과반수 이상이 찬성 → 과반수가 찬성: '과반수'가 이미 '절반을 넘는 수'를 뜻함
-- 옥상 위에서 → 옥상에서: '옥상'이 이미 건물 꼭대기
-- 모든 사람들이 → 모든 사람이: '모든'이 이미 복수를 나타냄. '들' 남발은 번역체
+  var corrections = [];
 
----
+  rules.forEach(function(rule) {
+    var regex = new RegExp(rule.pattern.source, rule.pattern.flags);
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      var original = match[0];
+      var suggested;
+      if (rule.noAutoReplace) {
+        suggested = '(수정 필요) ' + (rule.replacement || '삭제 또는 대체 권장');
+      } else {
+        suggested = original.replace(new RegExp(rule.pattern.source, ''), rule.replacement);
+      }
 
-### 1.4 번역체 표현
+      corrections.push({
+        category: rule.category,
+        original: original,
+        suggested: suggested,
+        reason: rule.reason,
+        startIndex: match.index,
+        endIndex: match.index + original.length,
+        severity: rule.severity,
+        noAutoReplace: !!rule.noAutoReplace
+      });
+    }
+  });
 
-- ~에 있어 → 삭제 또는 조사로 대체
-- ~로부터 받은 → ~에게서 받은
-- ~에 대하여 → 조사('의', '을')로 대체
-- ~에 의해 빌려졌다 → (능동문) 빌렸다
-- ~의 경우 → ~은/는
-- 한국의 경우, 출산율이 낮다 → 한국은 출산율이 낮다
+  var structureCorrections = checkStructure(text);
+  corrections.push.apply(corrections, structureCorrections);
 
----
+  corrections.sort(function(a, b) { return a.startIndex - b.startIndex; });
 
-### 1.5 피동/사동 오용
+  var byCategory = { spelling: 0, expression: 0, structure: 0, ethics: 0 };
+  corrections.forEach(function(c) {
+    if (byCategory[c.category] !== undefined) {
+      byCategory[c.category]++;
+    }
+  });
 
-- 잊혀지다 → 잊히다: '-어지다' 중복
-- 쓰여지다 → 쓰이다
-- 작성되어졌다 → 작성되었다
-- 불리우다 → 불리다
-- 원칙: 피동 접미사가 붙은 단어에 다시 '-어지다'를 붙이지 않는다.
+  var totalIssues = corrections.length;
+  var deductions = 0;
+  corrections.forEach(function(c) {
+    if (c.severity === 'error') deductions += 5;
+    else if (c.severity === 'warning') deductions += 3;
+    else deductions += 1;
+  });
+  var score = Math.max(0, 100 - deductions);
 
----
+  return {
+    corrections: corrections,
+    stats: { totalIssues: totalIssues, byCategory: byCategory, score: score }
+  };
+}
 
-### 1.6 조사 오용
+// =============================================================
+// DOM
+// =============================================================
+var themeToggle    = document.getElementById('themeToggle');
+var inputScreen    = document.getElementById('inputScreen');
+var compareScreen  = document.getElementById('compareScreen');
+var articleInput   = document.getElementById('articleInput');
+var charCount      = document.getElementById('charCount');
+var proofreadBtn   = document.getElementById('proofreadBtn');
+var errorContainer = document.getElementById('errorContainer');
+var backBtn        = document.getElementById('backBtn');
+var copyBtn        = document.getElementById('copyBtn');
+var originalPanel  = document.getElementById('originalPanel');
+var revisedPanel   = document.getElementById('revisedPanel');
+var copyToast      = document.getElementById('copyToast');
+var toolbarStats   = document.getElementById('toolbarStats');
+var correctionsList = document.getElementById('correctionsList');
+var correctionsTitle = document.getElementById('correctionsTitle');
+var correctionsToggle = document.getElementById('correctionsToggle');
+var correctionsSection = document.getElementById('correctionsSection');
 
-- 로서: 자격/신분/지위
-- 로써: 수단/도구/방법
-- '~에 대한' 남용 주의
+var originalText = '';
+var lastResult = null;
 
----
-
-## 제2장: 기사 구조와 형식
-
-### 2.1 리드(첫 문단) 작성
-- 리드는 60자 이내, 핵심 사실 포함
-- 질문형, 추측형 지양
-- 출처보다 뉴스가 먼저
-
-### 2.2 역피라미드 구조
-- 가장 중요한 사실을 맨 앞에 배치
-- 리드 → 구체적 설명 → 배경/맥락 → 부가 정보
-
-### 2.3 기사 제목
-- 8~12자 내외, 구체적 사실 포함
-- 낚시성, 모호, 과장, 피동형 제목 지양
-
-### 2.4 인용문 처리
-- 직접인용: 따옴표 + ~라고
-- 간접인용: 따옴표 없이 + ~고
-- 모호한 출처 사용 금지
-
-### 2.5 단락 구성
-- 한 단락에 하나의 주제
-- 2~3문장이 적정
-
-### 2.6 기사 유형별 구조
-- 스트레이트: 기자 의견 삽입 금지
-- 피처: 내러티브 활용
-- 기획: 추세 분석, 전문가 견해 종합
-
-### 2.7 사진 캡션
-- 장소, 날짜, 행위 구체적 서술
-- '~모습' 남발 금지
-
----
-
-## 제3장: 정확성과 윤리
-
-### 3.1 사실 확인
-- 상관관계와 인과관계 혼동 금지
-- 미확인 정보 보도 주의
-
-### 3.2 수치와 통계
-- 상대값과 절대값 함께 제시
-- 비교 기준 통일
-- 자의적 지표 조합 금지
-
-### 3.3 출처 표기
-- 타사 보도 인용 시 출처 명시
-
-### 3.4 공정성과 균형
-- 사실과 의견 분리
-- 반론 포함
-
-### 3.5 인권과 차별 표현
-- 성차별: 여류 작가 → 작가, 여기자 → 기자
-- 장애인: 장애우 → 장애인, 정신지체 → 지적장애
-- 불법체류자 → 미등록 이주민
-
-### 3.6 선정성 자제
-- 성폭력 사건 선정적 묘사 금지
-- 자살 보도: 구체적 방법 묘사 금지
-
----
-
-## 부록: 자주 틀리는 표현 체크리스트
-
-A. 맞춤법/표기: '안 되다' vs '않다', '되다/돼다', 외래어 표기법, 의존명사 띄어쓰기
-B. 문장: 주술 호응, 이중 피동, 번역체, 중복 표현, '~에 따르면' 호응
-C. 구조: 리드 60자 이내, 역피라미드, 제목, 인용, 출처, 단락
-D. 정확성/윤리: 팩트체크, 통계, 사실/의견 분리, 반론, 차별 표현, 선정성`;
-
-// ===== DOM =====
-const apiKeyInput    = document.getElementById('apiKeyInput');
-const apiKeyStatus   = document.getElementById('apiKeyStatus');
-const themeToggle    = document.getElementById('themeToggle');
-const inputScreen    = document.getElementById('inputScreen');
-const compareScreen  = document.getElementById('compareScreen');
-const articleInput   = document.getElementById('articleInput');
-const charCount      = document.getElementById('charCount');
-const proofreadBtn   = document.getElementById('proofreadBtn');
-const errorContainer = document.getElementById('errorContainer');
-const backBtn        = document.getElementById('backBtn');
-const copyBtn        = document.getElementById('copyBtn');
-const originalPanel  = document.getElementById('originalPanel');
-const revisedPanel   = document.getElementById('revisedPanel');
-const loadingOverlay = document.getElementById('loadingOverlay');
-const copyToast      = document.getElementById('copyToast');
-
-let originalText = '';
-
-// ===== Theme =====
+// =============================================================
+// Theme
+// =============================================================
 function initTheme(){
-  const saved = localStorage.getItem('theme');
+  var saved = localStorage.getItem('theme');
   if(saved === 'light') document.documentElement.setAttribute('data-theme','light');
   updateThemeIcon();
 }
 function updateThemeIcon(){
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
   themeToggle.innerHTML = isLight ? '&#9790;' : '&#9788;';
 }
-themeToggle.addEventListener('click',()=>{
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+themeToggle.addEventListener('click',function(){
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
   if(isLight) document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme','light');
   localStorage.setItem('theme', isLight ? 'dark' : 'light');
@@ -510,66 +641,64 @@ themeToggle.addEventListener('click',()=>{
 });
 initTheme();
 
-// ===== API Key =====
-const savedKey = localStorage.getItem('anthropic_api_key');
-if(savedKey){
-  apiKeyInput.value = savedKey;
-  apiKeyStatus.textContent = '저장됨';
-  apiKeyStatus.style.color = 'var(--success)';
-}
-apiKeyInput.addEventListener('change',()=>{
-  const key = apiKeyInput.value.trim();
-  if(key){
-    localStorage.setItem('anthropic_api_key', key);
-    apiKeyStatus.textContent = '저장됨';
-    apiKeyStatus.style.color = 'var(--success)';
-  } else {
-    localStorage.removeItem('anthropic_api_key');
-    apiKeyStatus.textContent = '';
-  }
-});
-
-// ===== Char Count =====
-articleInput.addEventListener('input',()=>{
+// =============================================================
+// Char Count
+// =============================================================
+articleInput.addEventListener('input',function(){
   charCount.textContent = articleInput.value.length + '자';
 });
 
-// ===== Screen Switching =====
+// =============================================================
+// Screen Switching
+// =============================================================
 function showScreen(screen){
   inputScreen.classList.remove('active');
   compareScreen.classList.remove('active');
   screen.classList.add('active');
 }
 
-backBtn.addEventListener('click',()=>{
+backBtn.addEventListener('click',function(){
   showScreen(inputScreen);
   articleInput.value = originalText;
   charCount.textContent = originalText.length + '자';
 });
 
-// ===== Copy =====
-copyBtn.addEventListener('click',()=>{
-  const text = revisedPanel.innerText;
-  navigator.clipboard.writeText(text).then(()=>{
+// =============================================================
+// Copy
+// =============================================================
+copyBtn.addEventListener('click',function(){
+  var text = revisedPanel.innerText;
+  navigator.clipboard.writeText(text).then(function(){
     copyToast.classList.add('show');
-    setTimeout(()=> copyToast.classList.remove('show'), 2000);
+    setTimeout(function(){ copyToast.classList.remove('show'); }, 2000);
   });
 });
 
-// ===== Diff Algorithm (word-level LCS) =====
-function diffWords(oldText, newText){
-  const oldTokens = oldText.split(/(\s+)/);
-  const newTokens = newText.split(/(\s+)/);
-  const m = oldTokens.length;
-  const n = newTokens.length;
+// =============================================================
+// Corrections list toggle
+// =============================================================
+var correctionsCollapsed = false;
+correctionsToggle.addEventListener('click', function(){
+  correctionsCollapsed = !correctionsCollapsed;
+  correctionsList.style.display = correctionsCollapsed ? 'none' : '';
+  correctionsToggle.textContent = correctionsCollapsed ? '펼치기' : '접기';
+});
 
-  // Build LCS table
-  const dp = [];
-  for(let i = 0; i <= m; i++){
+// =============================================================
+// Diff Algorithm (word-level LCS)
+// =============================================================
+function diffWords(oldText, newText){
+  var oldTokens = oldText.split(/(\s+)/);
+  var newTokens = newText.split(/(\s+)/);
+  var m = oldTokens.length;
+  var n = newTokens.length;
+
+  var dp = [];
+  for(var i = 0; i <= m; i++){
     dp[i] = new Uint16Array(n + 1);
   }
-  for(let i = 1; i <= m; i++){
-    for(let j = 1; j <= n; j++){
+  for(var i = 1; i <= m; i++){
+    for(var j = 1; j <= n; j++){
       if(oldTokens[i-1] === newTokens[j-1]){
         dp[i][j] = dp[i-1][j-1] + 1;
       } else {
@@ -578,9 +707,8 @@ function diffWords(oldText, newText){
     }
   }
 
-  // Backtrack
-  const result = [];
-  let i = m, j = n;
+  var result = [];
+  var i = m, j = n;
   while(i > 0 || j > 0){
     if(i > 0 && j > 0 && oldTokens[i-1] === newTokens[j-1]){
       result.push({type:'equal', value: oldTokens[i-1]});
@@ -602,23 +730,24 @@ function escapeHtml(s){
 }
 
 function renderDiff(diff, side){
-  let html = '';
-  for(const d of diff){
-    const val = escapeHtml(d.value);
+  var html = '';
+  for(var k = 0; k < diff.length; k++){
+    var d = diff[k];
+    var val = escapeHtml(d.value);
     if(d.type === 'equal'){
       html += val;
     } else if(d.type === 'delete'){
       if(side === 'left') html += '<span class="diff-del">' + val + '</span>';
-      // skip deletes on right side
     } else if(d.type === 'insert'){
       if(side === 'right') html += '<span class="diff-ins">' + val + '</span>';
-      // skip inserts on left side
     }
   }
   return html;
 }
 
-// ===== Show Error =====
+// =============================================================
+// Error display
+// =============================================================
 function showError(msg){
   errorContainer.innerHTML = '<div class="error-msg">' + escapeHtml(msg) + '</div>';
 }
@@ -626,98 +755,129 @@ function clearError(){
   errorContainer.innerHTML = '';
 }
 
-// ===== API Call =====
-async function proofread(text){
-  const apiKey = localStorage.getItem('anthropic_api_key');
-  if(!apiKey){
-    showError('API 키를 입력해주세요. 상단에 Anthropic API Key를 입력하세요.');
-    return null;
+// =============================================================
+// Proofread (rule-based, synchronous)
+// =============================================================
+function proofread(text) {
+  var result = analyzeArticle(text);
+
+  // Auto-replace: filter to replaceable corrections, sort by startIndex descending
+  var sorted = result.corrections
+    .filter(function(c){ return !c.noAutoReplace && c.suggested; })
+    .sort(function(a, b){ return b.startIndex - a.startIndex; });
+
+  var revised = text;
+  for (var i = 0; i < sorted.length; i++) {
+    var c = sorted[i];
+    revised = revised.slice(0, c.startIndex) + c.suggested + revised.slice(c.endIndex);
   }
 
-  loadingOverlay.classList.add('active');
-  clearError();
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(()=> controller.abort(), 90000);
-
-  try{
-    const response = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens: 8192,
-        system: AI_SYSTEM_PROMPT,
-        messages:[{
-          role:'user',
-          content:'다음 기사를 교정해주세요:\n\n' + text
-        }]
-      })
-    });
-
-    clearTimeout(timeoutId);
-
-    if(!response.ok){
-      const status = response.status;
-      if(status === 401) throw new Error('API 키가 올바르지 않습니다. Anthropic API 키를 확인해주세요.');
-      if(status === 403) throw new Error('API 접근 권한이 없습니다. API 키 설정을 확인해주세요.');
-      if(status === 429) throw new Error('요청 제한에 도달했습니다. 잠시 후 다시 시도해 주세요.');
-      if(status >= 500) throw new Error('AI 서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
-      const errData = await response.json().catch(()=>({}));
-      throw new Error(errData.error?.message || 'API 요청 실패 (HTTP ' + status + ')');
-    }
-
-    const data = await response.json();
-    const aiText = data.content && data.content[0] && data.content[0].text;
-    if(!aiText) throw new Error('AI로부터 유효한 응답을 받지 못했습니다.');
-
-    return aiText;
-
-  } catch(err){
-    if(err.name === 'AbortError'){
-      showError('AI 응답 시간이 초과되었습니다.');
-    } else if(err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('network')){
-      showError('네트워크 연결을 확인해주세요.');
-    } else {
-      showError(err.message || 'AI 교정 중 오류가 발생했습니다.');
-    }
-    return null;
-  } finally {
-    clearTimeout(timeoutId);
-    loadingOverlay.classList.remove('active');
-  }
+  return { revised: revised, result: result };
 }
 
-// ===== Main Action =====
-proofreadBtn.addEventListener('click', async ()=>{
-  const text = articleInput.value.trim();
+// =============================================================
+// Render corrections list
+// =============================================================
+var categoryLabels = {
+  spelling: '맞춤법',
+  expression: '표현',
+  structure: '구조',
+  ethics: '윤리'
+};
+var categoryIcons = {
+  spelling: 'Aa',
+  expression: '文',
+  structure: '段',
+  ethics: '倫'
+};
+var severityIcons = {
+  error: '!',
+  warning: '?',
+  info: 'i'
+};
+
+function renderCorrections(corrections) {
+  if (corrections.length === 0) {
+    correctionsList.innerHTML = '<li class="no-issues">교정 사항이 없습니다. 잘 작성된 기사입니다!</li>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < corrections.length; i++) {
+    var c = corrections[i];
+    var iconClass = c.severity;
+    var manualTag = c.noAutoReplace ? '<span class="tag-manual">직접 확인 필요</span>' : '';
+
+    html += '<li class="correction-item">';
+    html += '<div class="correction-icon ' + iconClass + '">' + severityIcons[c.severity] + '</div>';
+    html += '<div class="correction-body">';
+    html += '<div class="correction-change">';
+    html += '<span class="original">' + escapeHtml(c.original.length > 60 ? c.original.substring(0, 60) + '...' : c.original) + '</span>';
+    html += '<span class="arrow">&rarr;</span>';
+    html += '<span class="suggested">' + escapeHtml(c.suggested.length > 60 ? c.suggested.substring(0, 60) + '...' : c.suggested) + '</span>';
+    html += manualTag;
+    html += '</div>';
+    html += '<div class="correction-reason">' + escapeHtml(c.reason) + '</div>';
+    html += '</div>';
+    html += '<div class="correction-category">' + (categoryLabels[c.category] || c.category) + '</div>';
+    html += '</li>';
+  }
+  correctionsList.innerHTML = html;
+}
+
+function renderStats(stats) {
+  var scoreColor = stats.score >= 80 ? 'var(--success)' : stats.score >= 50 ? 'var(--warning-color)' : 'var(--danger)';
+  var html = '<span class="stat-score" style="color:' + scoreColor + '">' + stats.score + '점</span>';
+
+  if (stats.byCategory.spelling > 0) {
+    html += '<span class="stat-badge error">맞춤법 ' + stats.byCategory.spelling + '</span>';
+  }
+  if (stats.byCategory.expression > 0) {
+    html += '<span class="stat-badge warning">표현 ' + stats.byCategory.expression + '</span>';
+  }
+  if (stats.byCategory.structure > 0) {
+    html += '<span class="stat-badge info">구조 ' + stats.byCategory.structure + '</span>';
+  }
+  if (stats.byCategory.ethics > 0) {
+    html += '<span class="stat-badge error">윤리 ' + stats.byCategory.ethics + '</span>';
+  }
+
+  toolbarStats.innerHTML = html;
+  correctionsTitle.textContent = '교정 사항 (' + stats.totalIssues + '건)';
+}
+
+// =============================================================
+// Main Action
+// =============================================================
+proofreadBtn.addEventListener('click', function(){
+  var text = articleInput.value.trim();
   if(!text){
     showError('기사 내용을 입력해주세요.');
     return;
   }
   clearError();
-  proofreadBtn.disabled = true;
 
-  const revised = await proofread(text);
-
-  proofreadBtn.disabled = false;
-
-  if(revised === null) return;
+  var out = proofread(text);
+  var revised = out.revised;
+  lastResult = out.result;
 
   originalText = text;
 
   // Compute diff
-  const diff = diffWords(text, revised);
+  var diff = diffWords(text, revised);
 
   // Render panels
   originalPanel.innerHTML = renderDiff(diff, 'left');
   revisedPanel.innerHTML  = renderDiff(diff, 'right');
+
+  // Render stats and corrections list
+  renderStats(lastResult.stats);
+  renderCorrections(lastResult.corrections);
+
+  // Reset collapse state
+  correctionsCollapsed = false;
+  correctionsList.style.display = '';
+  correctionsToggle.textContent = '접기';
 
   showScreen(compareScreen);
 });
