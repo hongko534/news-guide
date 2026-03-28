@@ -383,14 +383,88 @@ const rules = [
   { pattern: /악세사리/g, replacement: '액세서리', category: 'spelling', reason: "일본어식 발음 영향을 배제한 표준 표기입니다.", severity: 'error' },
   { pattern: /시물레이션/g, replacement: '시뮬레이션', category: 'spelling', reason: "영어 'si-mu-'는 '시뮬'이 표준입니다.", severity: 'error' },
 
-  // 1-3. 띄어쓰기
+  // 1-3. 띄어쓰기 — 관형사 + 의존명사
   { pattern: /첫번째/g, replacement: '첫 번째', category: 'spelling', reason: "관형사 + 의존명사는 띄어 씁니다.", severity: 'error' },
   { pattern: /두번째/g, replacement: '두 번째', category: 'spelling', reason: "관형사 + 의존명사는 띄어 씁니다.", severity: 'error' },
   { pattern: /세번째/g, replacement: '세 번째', category: 'spelling', reason: "관형사 + 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /네번째/g, replacement: '네 번째', category: 'spelling', reason: "관형사 + 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /(\d+)번째/g, replacement: '$1 번째', category: 'spelling', reason: "수 + 의존명사 '번째'는 띄어 씁니다.", severity: 'error' },
+
+  // 1-3b. 띄어쓰기 — '다음/이번/지난' + 시간 단어
   { pattern: /다음주/g, replacement: '다음 주', category: 'spelling', reason: "'다음'과 '주'는 별개의 단어입니다.", severity: 'error' },
   { pattern: /다음달/g, replacement: '다음 달', category: 'spelling', reason: "'다음'과 '달'은 별개의 단어입니다.", severity: 'error' },
+  { pattern: /다음해/g, replacement: '다음 해', category: 'spelling', reason: "'다음'과 '해'는 별개의 단어입니다.", severity: 'error' },
+  { pattern: /이번주/g, replacement: '이번 주', category: 'spelling', reason: "'이번'과 '주'는 별개의 단어입니다.", severity: 'error' },
+  { pattern: /이번달/g, replacement: '이번 달', category: 'spelling', reason: "'이번'과 '달'은 별개의 단어입니다.", severity: 'error' },
+  { pattern: /지난주/g, replacement: '지난 주', category: 'spelling', reason: "'지난'과 '주'는 별개의 단어입니다.", severity: 'error' },
+  { pattern: /지난달/g, replacement: '지난 달', category: 'spelling', reason: "'지난'과 '달'은 별개의 단어입니다.", severity: 'error' },
+  { pattern: /지난해/g, replacement: '지난 해', category: 'spelling', reason: "'지난'과 '해'는 별개의 단어입니다.", severity: 'error' },
+
+  // 1-3c. 띄어쓰기 — 의존명사 '만' (시간 경과)
   { pattern: /이틀만에/g, replacement: '이틀 만에', category: 'spelling', reason: "시간 경과의 의존명사 '만'은 띄어 씁니다.", severity: 'error' },
+  { pattern: /사흘만에/g, replacement: '사흘 만에', category: 'spelling', reason: "시간 경과의 의존명사 '만'은 띄어 씁니다.", severity: 'error' },
+  { pattern: /나흘만에/g, replacement: '나흘 만에', category: 'spelling', reason: "시간 경과의 의존명사 '만'은 띄어 씁니다.", severity: 'error' },
   { pattern: /(\d+일)만에/g, replacement: '$1 만에', category: 'spelling', reason: "시간 경과의 의존명사 '만'은 띄어 씁니다.", severity: 'error' },
+  { pattern: /(\d+년)만에/g, replacement: '$1 만에', category: 'spelling', reason: "시간 경과의 의존명사 '만'은 띄어 씁니다.", severity: 'error' },
+  { pattern: /(\d+개월)만에/g, replacement: '$1 만에', category: 'spelling', reason: "시간 경과의 의존명사 '만'은 띄어 씁니다.", severity: 'error' },
+  { pattern: /(\d+시간)만에/g, replacement: '$1 만에', category: 'spelling', reason: "시간 경과의 의존명사 '만'은 띄어 씁니다.", severity: 'error' },
+
+  // 1-3d. 띄어쓰기 — 의존명사 '지' (시간 경과)
+  { pattern: /([가-힣])ㄴ지 (\d)/g, replacement: '$1ㄴ 지 $2', category: 'spelling', reason: "시간 경과의 의존명사 '지'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /간지 (\d)/g, replacement: '간 지 $1', category: 'spelling', reason: "시간 경과의 의존명사 '지'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /한지 (\d)/g, replacement: '한 지 $1', category: 'spelling', reason: "시간 경과의 의존명사 '지'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /된지 (\d)/g, replacement: '된 지 $1', category: 'spelling', reason: "시간 경과의 의존명사 '지'는 앞말과 띄어 씁니다.", severity: 'error' },
+
+  // 1-3e. 띄어쓰기 — 의존명사 '간' (관계 vs 기간)
+  { pattern: /기업간 /g, replacement: '기업 간 ', category: 'spelling', reason: "관계를 나타내는 '간'은 의존명사이므로 띄어 씁니다.", severity: 'error' },
+  { pattern: /국가간 /g, replacement: '국가 간 ', category: 'spelling', reason: "관계를 나타내는 '간'은 의존명사이므로 띄어 씁니다.", severity: 'error' },
+  { pattern: /부서간 /g, replacement: '부서 간 ', category: 'spelling', reason: "관계를 나타내는 '간'은 의존명사이므로 띄어 씁니다.", severity: 'error' },
+  { pattern: /지역간 /g, replacement: '지역 간 ', category: 'spelling', reason: "관계를 나타내는 '간'은 의존명사이므로 띄어 씁니다.", severity: 'error' },
+  { pattern: /세대간 /g, replacement: '세대 간 ', category: 'spelling', reason: "관계를 나타내는 '간'은 의존명사이므로 띄어 씁니다.", severity: 'error' },
+  { pattern: /부부간/g, replacement: '부부 간', category: 'spelling', reason: "관계를 나타내는 '간'은 의존명사이므로 띄어 씁니다.", severity: 'error' },
+  { pattern: /남녀간/g, replacement: '남녀 간', category: 'spelling', reason: "관계를 나타내는 '간'은 의존명사이므로 띄어 씁니다.", severity: 'error' },
+
+  // 1-3f. 띄어쓰기 — 의존명사 '등/수/것/데/바/뿐/때문'
+  { pattern: /할수 있/g, replacement: '할 수 있', category: 'spelling', reason: "의존명사 '수'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /할수있/g, replacement: '할 수 있', category: 'spelling', reason: "의존명사 '수'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /될수 있/g, replacement: '될 수 있', category: 'spelling', reason: "의존명사 '수'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /될수있/g, replacement: '될 수 있', category: 'spelling', reason: "의존명사 '수'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /([가-힣])ㄹ수 /g, replacement: '$1ㄹ 수 ', category: 'spelling', reason: "의존명사 '수'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /할것이/g, replacement: '할 것이', category: 'spelling', reason: "의존명사 '것'은 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /한것으로/g, replacement: '한 것으로', category: 'spelling', reason: "의존명사 '것'은 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /된것으로/g, replacement: '된 것으로', category: 'spelling', reason: "의존명사 '것'은 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /는것으로/g, replacement: '는 것으로', category: 'spelling', reason: "의존명사 '것'은 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /할때/g, replacement: '할 때', category: 'spelling', reason: "의존명사 '때'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /될때/g, replacement: '될 때', category: 'spelling', reason: "의존명사 '때'는 앞말과 띄어 씁니다.", severity: 'error' },
+  { pattern: /한데다/g, replacement: '한 데다', category: 'spelling', reason: "의존명사 '데'는 앞말과 띄어 씁니다.", severity: 'error' },
+
+  { pattern: /한바 있/g, replacement: '한 바 있', category: 'spelling', reason: "의존명사 '바'는 앞말과 띄어 씁니다.", severity: 'error' },
+
+  // 1-3g. 띄어쓰기 — 단위 의존명사
+
+  { pattern: /한개/g, replacement: '한 개', category: 'spelling', reason: "수관형사 + 단위 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /두개/g, replacement: '두 개', category: 'spelling', reason: "수관형사 + 단위 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /세개/g, replacement: '세 개', category: 'spelling', reason: "수관형사 + 단위 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /한명/g, replacement: '한 명', category: 'spelling', reason: "수관형사 + 단위 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /두명/g, replacement: '두 명', category: 'spelling', reason: "수관형사 + 단위 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /세명/g, replacement: '세 명', category: 'spelling', reason: "수관형사 + 단위 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /한곳/g, replacement: '한 곳', category: 'spelling', reason: "수관형사 + 단위 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /두곳/g, replacement: '두 곳', category: 'spelling', reason: "수관형사 + 단위 의존명사는 띄어 씁니다.", severity: 'error' },
+  { pattern: /한번/g, replacement: '한 번', category: 'spelling', reason: "수관형사 + 단위 의존명사는 띄어 씁니다. (단, '한번 해볼까'처럼 부사로 쓸 때는 붙여 씀)", severity: 'warning' },
+
+  // 1-3h. 띄어쓰기 — 보조 용언
+  { pattern: /해주다/g, replacement: '해 주다', category: 'spelling', reason: "보조 용언 '주다'는 띄어 씁니다.", severity: 'warning' },
+  { pattern: /해보다/g, replacement: '해 보다', category: 'spelling', reason: "보조 용언 '보다'는 띄어 씁니다.", severity: 'warning' },
+  { pattern: /해버리/g, replacement: '해 버리', category: 'spelling', reason: "보조 용언 '버리다'는 띄어 씁니다.", severity: 'warning' },
+  { pattern: /해놓/g, replacement: '해 놓', category: 'spelling', reason: "보조 용언 '놓다'는 띄어 씁니다.", severity: 'warning' },
+  { pattern: /되어지/g, replacement: '되어 지', category: 'spelling', reason: "보조 용언 '-어 지다'는 띄어 씁니다. (이중 피동 여부도 확인)", severity: 'warning' },
+
+  // 1-3i. 띄어쓰기 — 기타 자주 틀리는 것
+
+  { pattern: /대용량제품/g, replacement: '대용량 제품', category: 'spelling', reason: "'대용량'과 '제품'은 별개의 단어입니다.", severity: 'error' },
+  { pattern: /대규모투자/g, replacement: '대규모 투자', category: 'spelling', reason: "'대규모'와 '투자'는 별개의 단어입니다.", severity: 'error' },
+  { pattern: /올해들어/g, replacement: '올해 들어', category: 'spelling', reason: "'올해'와 '들어'는 별개의 단어입니다.", severity: 'error' },
+  { pattern: /올들어/g, replacement: '올 들어', category: 'spelling', reason: "'올'과 '들어'는 별개의 단어입니다.", severity: 'error' },
 
   // 1-4. 유사어 혼동
   { pattern: /입맛이 땡/g, replacement: '입맛이 당', category: 'spelling', reason: "'당기다'가 표준어입니다. '땡기다'는 비표준입니다.", severity: 'error' },
