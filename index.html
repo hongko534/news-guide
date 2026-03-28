@@ -382,6 +382,130 @@ body{
 }
 .nav-archive-btn:hover{border-color:var(--accent);color:var(--accent)}
 
+/* --- Access Code on archive card --- */
+.archive-card-code{
+  margin-top:8px;padding-top:8px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.archive-card-code-text{
+  font-family:'Courier New',Courier,monospace;
+  font-size:.9rem;font-weight:700;
+  color:var(--accent);letter-spacing:.15em;
+}
+.archive-card-code-copy{
+  background:none;border:none;cursor:pointer;
+  font-size:.85rem;padding:2px 4px;color:var(--text-muted);
+  transition:color var(--transition);
+}
+.archive-card-code-copy:hover{color:var(--accent)}
+
+/* --- Modal Overlay --- */
+.modal-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;
+  animation:fadeIn .25s ease;
+}
+.modal-box{
+  background:var(--bg-surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  width:90%;max-width:400px;
+  padding:0;
+  position:relative;
+  animation:fadeIn .25s ease;
+}
+.modal-close{
+  position:absolute;top:10px;right:12px;
+  background:none;border:none;
+  color:var(--text-muted);font-size:1.3rem;cursor:pointer;
+  line-height:1;padding:4px;
+  transition:color var(--transition);
+}
+.modal-close:hover{color:var(--text)}
+.modal-header{
+  padding:20px 24px 0;
+  font-size:1.1rem;font-weight:700;
+  color:var(--text);
+}
+.modal-body{
+  padding:16px 24px 24px;
+}
+.modal-body label{
+  display:block;font-size:.85rem;font-weight:600;
+  color:var(--text-muted);margin-bottom:6px;
+}
+.modal-body input[type="password"],
+.modal-body input[type="text"]{
+  width:100%;padding:12px 16px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-surface);color:var(--text);
+  font-family:var(--font);font-size:1rem;
+  transition:border var(--transition);
+  margin-bottom:12px;
+}
+.modal-body input:focus{outline:none;border-color:var(--accent)}
+.modal-body .btn-primary{width:100%;margin-top:4px}
+.modal-body .modal-error{
+  font-size:.82rem;color:var(--danger);
+  margin-bottom:8px;min-height:1.2em;
+}
+
+/* --- Modal Tabs --- */
+.modal-tabs{
+  display:flex;border-bottom:1px solid var(--border);
+}
+.modal-tab{
+  flex:1;padding:12px 16px;
+  background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--text-muted);font-size:.9rem;font-weight:600;
+  cursor:pointer;transition:all var(--transition);text-align:center;
+}
+.modal-tab:hover{color:var(--text)}
+.modal-tab.active{
+  color:var(--accent);border-bottom-color:var(--accent);
+}
+.modal-tab-content{display:none}
+.modal-tab-content.active{display:block}
+
+/* --- Access Code Display Modal --- */
+.access-code-display{
+  text-align:center;padding:12px 0;
+  font-family:'Courier New',Courier,monospace;
+  font-size:2rem;font-weight:700;
+  letter-spacing:.2em;
+  color:var(--accent);
+  background:var(--bg-elevated);
+  border-radius:var(--radius-sm);
+  margin-bottom:16px;
+}
+.access-code-note{
+  font-size:.82rem;color:var(--text-muted);
+  text-align:center;margin-bottom:16px;
+}
+
+/* --- Password Change Button --- */
+.btn-secondary-sm{
+  padding:8px 20px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:transparent;color:var(--text);
+  font-size:.88rem;cursor:pointer;
+  transition:all var(--transition);
+  margin-left:8px;
+}
+.btn-secondary-sm:hover{border-color:var(--accent);color:var(--accent)}
+
+/* --- Access Code Input Styling --- */
+.access-code-input{
+  text-transform:uppercase;
+  font-family:'Courier New',Courier,monospace;
+  letter-spacing:.15em;
+  text-align:center;
+  font-size:1.1rem !important;
+}
+
 @media(max-width:768px){
   .nav{padding:10px 16px;flex-wrap:wrap}
   .compare-panels{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
@@ -461,6 +585,7 @@ body{
     <div class="archive-body" id="archiveBody"></div>
     <div class="archive-footer" id="archiveFooter" style="display:none">
       <button class="btn-danger" id="archiveClearBtn">전체 삭제</button>
+      <button class="btn-secondary-sm" id="changePwBtn" style="display:none">비밀번호 변경</button>
     </div>
   </div>
 </main>
@@ -875,10 +1000,272 @@ var archiveFooter    = document.getElementById('archiveFooter');
 var archiveBackBtn   = document.getElementById('archiveBackBtn');
 var archiveClearBtn  = document.getElementById('archiveClearBtn');
 var archiveNavBtn    = document.getElementById('archiveBtn');
+var changePwBtn      = document.getElementById('changePwBtn');
 
 var originalText = '';
 var lastResult = null;
 var isArchiveReadOnly = false;
+var isAdminLoggedIn = false;
+var isReporterMode = false;
+var reporterAccessCode = '';
+
+// =============================================================
+// SHA-256 Hash
+// =============================================================
+async function sha256(text) {
+  var data = new TextEncoder().encode(text);
+  var hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+// =============================================================
+// Access Code Generator
+// =============================================================
+function generateAccessCode() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var code = '';
+  for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+// =============================================================
+// Modal Utilities
+// =============================================================
+function createModal(content, opts) {
+  opts = opts || {};
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  var box = document.createElement('div');
+  box.className = 'modal-box';
+  if (!opts.noClose) {
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', function(){ overlay.remove(); });
+    box.appendChild(closeBtn);
+  }
+  if (typeof content === 'string') {
+    box.innerHTML += content;
+  } else {
+    box.appendChild(content);
+  }
+  overlay.appendChild(box);
+  overlay.addEventListener('click', function(e){
+    if (e.target === overlay && !opts.noClose) overlay.remove();
+  });
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function removeAllModals() {
+  document.querySelectorAll('.modal-overlay').forEach(function(m){ m.remove(); });
+}
+
+// =============================================================
+// Admin Password Setup Modal
+// =============================================================
+function showSetupPasswordModal() {
+  var html = '';
+  html += '<div class="modal-header">관리자 비밀번호 설정</div>';
+  html += '<div class="modal-body">';
+  html += '<div class="modal-error" id="setupPwError"></div>';
+  html += '<label>비밀번호</label>';
+  html += '<input type="password" id="setupPw1" placeholder="비밀번호 입력">';
+  html += '<label>비밀번호 확인</label>';
+  html += '<input type="password" id="setupPw2" placeholder="비밀번호 다시 입력">';
+  html += '<button class="btn-primary" id="setupPwSubmit">설정 완료</button>';
+  html += '</div>';
+  var modal = createModal(html);
+  var pw1 = modal.querySelector('#setupPw1');
+  var pw2 = modal.querySelector('#setupPw2');
+  var errEl = modal.querySelector('#setupPwError');
+  var submitBtn = modal.querySelector('#setupPwSubmit');
+  pw1.focus();
+  submitBtn.addEventListener('click', async function(){
+    var v1 = pw1.value, v2 = pw2.value;
+    if (!v1) { errEl.textContent = '비밀번호를 입력해주세요.'; return; }
+    if (v1.length < 4) { errEl.textContent = '비밀번호는 4자 이상이어야 합니다.'; return; }
+    if (v1 !== v2) { errEl.textContent = '비밀번호가 일치하지 않습니다.'; return; }
+    var hash = await sha256(v1);
+    localStorage.setItem('admin_pw_hash', hash);
+    modal.remove();
+    isAdminLoggedIn = true;
+    renderArchiveList();
+    showScreen(archiveScreen);
+  });
+  pw2.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') submitBtn.click();
+  });
+}
+
+// =============================================================
+// Access Modal (Admin / Reporter tabs)
+// =============================================================
+function showAccessModal() {
+  var html = '';
+  html += '<div class="modal-tabs">';
+  html += '<button class="modal-tab active" data-tab="admin">관리자</button>';
+  html += '<button class="modal-tab" data-tab="reporter">기자</button>';
+  html += '</div>';
+  html += '<div class="modal-tab-content active" id="tabAdmin">';
+  html += '<div class="modal-body">';
+  html += '<div class="modal-error" id="adminLoginError"></div>';
+  html += '<label>관리자 비밀번호</label>';
+  html += '<input type="password" id="adminPwInput" placeholder="비밀번호 입력">';
+  html += '<button class="btn-primary" id="adminLoginBtn">로그인</button>';
+  html += '</div>';
+  html += '</div>';
+  html += '<div class="modal-tab-content" id="tabReporter">';
+  html += '<div class="modal-body">';
+  html += '<div class="modal-error" id="reporterCodeError"></div>';
+  html += '<label>접근 코드 (6자리)</label>';
+  html += '<input type="text" id="reporterCodeInput" class="access-code-input" placeholder="AB3K7P" maxlength="6" autocomplete="off">';
+  html += '<button class="btn-primary" id="reporterAccessBtn">확인</button>';
+  html += '</div>';
+  html += '</div>';
+  var modal = createModal(html);
+
+  // Tab switching
+  var tabs = modal.querySelectorAll('.modal-tab');
+  var tabContents = modal.querySelectorAll('.modal-tab-content');
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){
+      tabs.forEach(function(t){ t.classList.remove('active'); });
+      tabContents.forEach(function(tc){ tc.classList.remove('active'); });
+      tab.classList.add('active');
+      var target = tab.getAttribute('data-tab');
+      if (target === 'admin') {
+        modal.querySelector('#tabAdmin').classList.add('active');
+        modal.querySelector('#adminPwInput').focus();
+      } else {
+        modal.querySelector('#tabReporter').classList.add('active');
+        modal.querySelector('#reporterCodeInput').focus();
+      }
+    });
+  });
+
+  // Admin login
+  var adminPwInput = modal.querySelector('#adminPwInput');
+  var adminLoginBtn = modal.querySelector('#adminLoginBtn');
+  var adminErr = modal.querySelector('#adminLoginError');
+  adminPwInput.focus();
+  adminLoginBtn.addEventListener('click', async function(){
+    var pw = adminPwInput.value;
+    if (!pw) { adminErr.textContent = '비밀번호를 입력해주세요.'; return; }
+    var hash = await sha256(pw);
+    var stored = localStorage.getItem('admin_pw_hash');
+    if (hash === stored) {
+      modal.remove();
+      isAdminLoggedIn = true;
+      isReporterMode = false;
+      renderArchiveList();
+      showScreen(archiveScreen);
+    } else {
+      adminErr.textContent = '비밀번호가 올바르지 않습니다.';
+      adminPwInput.value = '';
+      adminPwInput.focus();
+    }
+  });
+  adminPwInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') adminLoginBtn.click();
+  });
+
+  // Reporter access
+  var reporterCodeInput = modal.querySelector('#reporterCodeInput');
+  var reporterAccessBtn = modal.querySelector('#reporterAccessBtn');
+  var reporterErr = modal.querySelector('#reporterCodeError');
+  reporterCodeInput.addEventListener('input', function(){
+    reporterCodeInput.value = reporterCodeInput.value.toUpperCase();
+  });
+  reporterAccessBtn.addEventListener('click', function(){
+    var code = reporterCodeInput.value.trim().toUpperCase();
+    if (code.length !== 6) { reporterErr.textContent = '6자리 코드를 입력해주세요.'; return; }
+    var archive = getArchive();
+    var found = archive.filter(function(item){ return item.accessCode === code; });
+    if (found.length === 0) {
+      reporterErr.textContent = '일치하는 기사를 찾을 수 없습니다.';
+      reporterCodeInput.value = '';
+      reporterCodeInput.focus();
+      return;
+    }
+    modal.remove();
+    isAdminLoggedIn = false;
+    isReporterMode = true;
+    reporterAccessCode = code;
+    renderArchiveList();
+    showScreen(archiveScreen);
+  });
+  reporterCodeInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') reporterAccessBtn.click();
+  });
+}
+
+// =============================================================
+// Access Code Display Modal (after proofreading)
+// =============================================================
+function showAccessCodeModal(code) {
+  var html = '';
+  html += '<div class="modal-header">접근 코드가 생성되었습니다</div>';
+  html += '<div class="modal-body">';
+  html += '<div class="access-code-note">기자에게 이 코드를 전달하면 해당 기사만 열람할 수 있습니다.</div>';
+  html += '<div class="access-code-display" id="codeDisplay">' + escapeHtml(code) + '</div>';
+  html += '<button class="btn-primary" id="copyCodeBtn" style="margin-bottom:8px">코드 복사</button>';
+  html += '<button class="btn-secondary" id="closeCodeBtn" style="width:100%;margin-top:0">확인</button>';
+  html += '</div>';
+  var modal = createModal(html);
+  modal.querySelector('#copyCodeBtn').addEventListener('click', function(){
+    navigator.clipboard.writeText(code).then(function(){
+      modal.querySelector('#copyCodeBtn').textContent = '복사됨!';
+      setTimeout(function(){ modal.querySelector('#copyCodeBtn').textContent = '코드 복사'; }, 1500);
+    });
+  });
+  modal.querySelector('#closeCodeBtn').addEventListener('click', function(){
+    modal.remove();
+  });
+}
+
+// =============================================================
+// Password Change Modal
+// =============================================================
+function showChangePasswordModal() {
+  var html = '';
+  html += '<div class="modal-header">비밀번호 변경</div>';
+  html += '<div class="modal-body">';
+  html += '<div class="modal-error" id="changePwError"></div>';
+  html += '<label>현재 비밀번호</label>';
+  html += '<input type="password" id="changePwCurrent" placeholder="현재 비밀번호">';
+  html += '<label>새 비밀번호</label>';
+  html += '<input type="password" id="changePwNew1" placeholder="새 비밀번호">';
+  html += '<label>새 비밀번호 확인</label>';
+  html += '<input type="password" id="changePwNew2" placeholder="새 비밀번호 다시 입력">';
+  html += '<button class="btn-primary" id="changePwSubmit">변경 완료</button>';
+  html += '</div>';
+  var modal = createModal(html);
+  var errEl = modal.querySelector('#changePwError');
+  var currentInput = modal.querySelector('#changePwCurrent');
+  currentInput.focus();
+  modal.querySelector('#changePwSubmit').addEventListener('click', async function(){
+    var cur = currentInput.value;
+    var n1 = modal.querySelector('#changePwNew1').value;
+    var n2 = modal.querySelector('#changePwNew2').value;
+    if (!cur) { errEl.textContent = '현재 비밀번호를 입력해주세요.'; return; }
+    var curHash = await sha256(cur);
+    var stored = localStorage.getItem('admin_pw_hash');
+    if (curHash !== stored) { errEl.textContent = '현재 비밀번호가 올바르지 않습니다.'; return; }
+    if (!n1) { errEl.textContent = '새 비밀번호를 입력해주세요.'; return; }
+    if (n1.length < 4) { errEl.textContent = '비밀번호는 4자 이상이어야 합니다.'; return; }
+    if (n1 !== n2) { errEl.textContent = '새 비밀번호가 일치하지 않습니다.'; return; }
+    var newHash = await sha256(n1);
+    localStorage.setItem('admin_pw_hash', newHash);
+    modal.remove();
+    copyToast.textContent = '비밀번호가 변경되었습니다';
+    copyToast.classList.add('show');
+    setTimeout(function(){ copyToast.classList.remove('show'); copyToast.textContent = '클립보드에 복사되었습니다'; }, 2000);
+  });
+  modal.querySelector('#changePwNew2').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') modal.querySelector('#changePwSubmit').click();
+  });
+}
 
 // =============================================================
 // Theme
@@ -1146,7 +1533,10 @@ proofreadBtn.addEventListener('click', function(){
   showScreen(compareScreen);
 
   // Save to archive
-  saveArchive(text, revised, lastResult.stats.totalIssues, lastResult.stats.score);
+  var accessCode = saveArchive(text, revised, lastResult.stats.totalIssues, lastResult.stats.score);
+
+  // Show access code modal
+  showAccessCodeModal(accessCode);
 });
 
 // =============================================================
@@ -1168,6 +1558,7 @@ function setArchive(arr) {
 
 function saveArchive(original, revised, corrections, score) {
   var archive = getArchive();
+  var code = generateAccessCode();
   archive.unshift({
     id: Date.now(),
     date: new Date().toLocaleString('ko-KR'),
@@ -1175,29 +1566,62 @@ function saveArchive(original, revised, corrections, score) {
     revised: revised,
     corrections: corrections,
     score: score,
-    preview: original.substring(0, 50) + (original.length > 50 ? '...' : '')
+    preview: original.substring(0, 50) + (original.length > 50 ? '...' : ''),
+    accessCode: code
   });
   if (archive.length > ARCHIVE_MAX) {
     archive = archive.slice(0, ARCHIVE_MAX);
   }
   setArchive(archive);
+  return code;
+}
+
+// Migrate legacy archive items without accessCode
+function migrateArchiveAccessCodes() {
+  var archive = getArchive();
+  var changed = false;
+  for (var i = 0; i < archive.length; i++) {
+    if (!archive[i].accessCode) {
+      archive[i].accessCode = generateAccessCode();
+      changed = true;
+    }
+  }
+  if (changed) setArchive(archive);
 }
 
 function renderArchiveList() {
   var archive = getArchive();
+
+  // In reporter mode, filter by access code
+  if (isReporterMode && !isAdminLoggedIn) {
+    archive = archive.filter(function(item){ return item.accessCode === reporterAccessCode; });
+  }
+
   if (archive.length === 0) {
     archiveBody.innerHTML = '<div class="archive-empty"><div class="archive-empty-icon">&#128203;</div><div>아직 교정 이력이 없습니다</div></div>';
     archiveFooter.style.display = 'none';
     return;
   }
   archiveFooter.style.display = '';
+
+  // Show/hide admin-only buttons
+  if (isAdminLoggedIn) {
+    archiveClearBtn.style.display = '';
+    changePwBtn.style.display = '';
+  } else {
+    archiveClearBtn.style.display = 'none';
+    changePwBtn.style.display = 'none';
+  }
+
   var html = '';
   for (var i = 0; i < archive.length; i++) {
     var item = archive[i];
     var scoreColor = item.score >= 80 ? 'var(--success)' : item.score >= 50 ? 'var(--warning-color)' : 'var(--danger)';
     var previewText = item.original.substring(0, 80) + (item.original.length > 80 ? '...' : '');
     html += '<div class="archive-card" data-archive-id="' + item.id + '">';
-    html += '<button class="archive-card-delete" data-delete-id="' + item.id + '" title="삭제">&times;</button>';
+    if (isAdminLoggedIn) {
+      html += '<button class="archive-card-delete" data-delete-id="' + item.id + '" title="삭제">&times;</button>';
+    }
     html += '<div class="archive-card-top">';
     html += '<span class="archive-card-date">' + escapeHtml(item.date) + '</span>';
     html += '<div class="archive-card-stats">';
@@ -1205,6 +1629,12 @@ function renderArchiveList() {
     html += '<span class="archive-card-score" style="color:' + scoreColor + '">' + item.score + '점</span>';
     html += '</div></div>';
     html += '<div class="archive-card-preview">' + escapeHtml(previewText) + '</div>';
+    if (isAdminLoggedIn && item.accessCode) {
+      html += '<div class="archive-card-code">';
+      html += '<span class="archive-card-code-text">' + escapeHtml(item.accessCode) + '</span>';
+      html += '<button class="archive-card-code-copy" data-copy-code="' + escapeHtml(item.accessCode) + '" title="코드 복사">&#128203;</button>';
+      html += '</div>';
+    }
     html += '</div>';
   }
   archiveBody.innerHTML = html;
@@ -1251,6 +1681,9 @@ function openArchiveItem(id) {
   // Change back button to go to archive
   backBtn.textContent = '\u2190 아카이브로 돌아가기';
 
+  // Hide copy button in reporter mode
+  copyBtn.style.display = (isReporterMode && !isAdminLoggedIn) ? 'none' : '';
+
   showScreen(compareScreen);
 }
 
@@ -1270,20 +1703,36 @@ function clearArchive() {
 
 // Archive nav button
 archiveNavBtn.addEventListener('click', function() {
-  renderArchiveList();
-  showScreen(archiveScreen);
+  // Already logged in as admin this session
+  if (isAdminLoggedIn) {
+    renderArchiveList();
+    showScreen(archiveScreen);
+    return;
+  }
+  // No password set yet — show setup modal
+  var storedHash = localStorage.getItem('admin_pw_hash');
+  if (!storedHash) {
+    showSetupPasswordModal();
+    return;
+  }
+  // Password exists — show access modal (admin/reporter tabs)
+  showAccessModal();
 });
-
-// Archive back button
-archiveBackBtn.addEventListener('click', function() {
-  showScreen(inputScreen);
-});
-
-// Archive clear button
-archiveClearBtn.addEventListener('click', clearArchive);
 
 // Archive card click delegation
 archiveBody.addEventListener('click', function(e) {
+  // Check for code copy button
+  var codeCopyBtn = e.target.closest('.archive-card-code-copy');
+  if (codeCopyBtn) {
+    e.stopPropagation();
+    var code = codeCopyBtn.getAttribute('data-copy-code');
+    navigator.clipboard.writeText(code).then(function(){
+      copyToast.textContent = '접근 코드가 복사되었습니다';
+      copyToast.classList.add('show');
+      setTimeout(function(){ copyToast.classList.remove('show'); copyToast.textContent = '클립보드에 복사되었습니다'; }, 2000);
+    });
+    return;
+  }
   // Check for delete button
   var deleteBtn = e.target.closest('.archive-card-delete');
   if (deleteBtn) {
@@ -1305,6 +1754,7 @@ backBtn.addEventListener('click', function(){
   if (isArchiveReadOnly) {
     isArchiveReadOnly = false;
     revisedPanel.contentEditable = 'true';
+    copyBtn.style.display = '';
     var panelHeaders = document.querySelectorAll('.panel-header');
     if (panelHeaders.length >= 2) {
       panelHeaders[1].textContent = '수정본 (편집 가능)';
@@ -1318,6 +1768,24 @@ backBtn.addEventListener('click', function(){
   articleInput.value = originalText;
   charCount.textContent = originalText.length + '자';
 });
+
+// Archive back button — reset modes
+archiveBackBtn.addEventListener('click', function() {
+  isReporterMode = false;
+  reporterAccessCode = '';
+  showScreen(inputScreen);
+});
+
+// Password change button
+changePwBtn.addEventListener('click', function() {
+  showChangePasswordModal();
+});
+
+// Archive clear button
+archiveClearBtn.addEventListener('click', clearArchive);
+
+// Migrate legacy archive items on load
+migrateArchiveAccessCodes();
 
 })();
 </script>
