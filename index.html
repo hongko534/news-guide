@@ -287,12 +287,109 @@ body{
 }
 
 /* --- Responsive --- */
+/* --- Archive Screen --- */
+.archive-screen{
+  flex:1;display:flex;flex-direction:column;
+  min-height:calc(100vh - 57px);
+}
+.archive-header{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 24px;
+  background:var(--bg-surface);
+  border-bottom:1px solid var(--border);
+}
+.archive-header h2{
+  font-size:1.1rem;font-weight:700;margin:0;
+}
+.archive-header .toolbar-spacer{flex:1}
+.archive-body{
+  flex:1;overflow-y:auto;
+  padding:24px;
+  max-width:840px;width:100%;margin:0 auto;
+}
+.archive-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;min-height:300px;
+  color:var(--text-muted);font-size:.95rem;text-align:center;
+}
+.archive-empty-icon{font-size:2.5rem;margin-bottom:12px;opacity:.5}
+.archive-card{
+  background:var(--bg-surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px 20px;
+  margin-bottom:12px;
+  cursor:pointer;
+  transition:all var(--transition);
+  position:relative;
+}
+.archive-card:hover{
+  border-color:var(--accent);
+  box-shadow:0 2px 12px rgba(99,102,241,.12);
+  transform:translateY(-1px);
+}
+.archive-card-top{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;
+}
+.archive-card-date{
+  font-size:.8rem;color:var(--text-muted);
+}
+.archive-card-stats{
+  display:flex;gap:8px;align-items:center;
+}
+.archive-card-score{
+  font-weight:700;font-size:.85rem;color:var(--accent);
+}
+.archive-card-corrections{
+  font-size:.78rem;color:var(--text-muted);
+}
+.archive-card-preview{
+  font-size:.9rem;line-height:1.6;
+  color:var(--text);
+  overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+.archive-card-delete{
+  position:absolute;top:10px;right:10px;
+  background:none;border:none;
+  color:var(--text-muted);font-size:1rem;
+  cursor:pointer;padding:4px 8px;border-radius:var(--radius-sm);
+  transition:all var(--transition);
+  line-height:1;
+}
+.archive-card-delete:hover{
+  background:rgba(239,68,68,.15);color:var(--danger);
+}
+.archive-footer{
+  padding:16px 24px;
+  border-top:1px solid var(--border);
+  background:var(--bg-surface);
+  text-align:center;
+}
+.btn-danger{
+  padding:8px 20px;border:1px solid var(--danger);border-radius:var(--radius-sm);
+  background:transparent;color:var(--danger);
+  font-size:.88rem;cursor:pointer;
+  transition:all var(--transition);
+}
+.btn-danger:hover{background:rgba(239,68,68,.15)}
+.nav-archive-btn{
+  background:none;border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:6px 10px;cursor:pointer;color:var(--text);font-size:.88rem;
+  transition:all var(--transition);
+  display:inline-flex;align-items:center;gap:4px;
+}
+.nav-archive-btn:hover{border-color:var(--accent);color:var(--accent)}
+
 @media(max-width:768px){
   .nav{padding:10px 16px;flex-wrap:wrap}
   .compare-panels{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
   .panel-left{border-right:none;border-bottom:1px solid var(--border)}
   .input-screen{padding:32px 16px}
   .corrections-section{max-height:50vh}
+  .archive-body{padding:16px}
+  .archive-card{padding:12px 16px}
 }
 </style>
 </head>
@@ -302,6 +399,7 @@ body{
 <nav class="nav">
   <div class="nav-logo">기사 교정기</div>
   <div class="nav-spacer"></div>
+  <button class="nav-archive-btn" id="archiveBtn" title="교정 이력">&#128197; 아카이브</button>
   <button class="theme-btn" id="themeToggle" title="테마 전환">&#9788;</button>
 </nav>
 
@@ -348,6 +446,21 @@ body{
         <button class="corrections-toggle" id="correctionsToggle">접기</button>
       </div>
       <ul class="corrections-list" id="correctionsList"></ul>
+    </div>
+  </div>
+</main>
+
+<!-- Archive Screen -->
+<main class="screen" id="archiveScreen">
+  <div class="archive-screen">
+    <div class="archive-header">
+      <button class="btn-secondary" id="archiveBackBtn">&#8592; 뒤로</button>
+      <h2>&#128197; 교정 이력</h2>
+      <div class="toolbar-spacer"></div>
+    </div>
+    <div class="archive-body" id="archiveBody"></div>
+    <div class="archive-footer" id="archiveFooter" style="display:none">
+      <button class="btn-danger" id="archiveClearBtn">전체 삭제</button>
     </div>
   </div>
 </main>
@@ -756,8 +869,16 @@ var correctionsTitle = document.getElementById('correctionsTitle');
 var correctionsToggle = document.getElementById('correctionsToggle');
 var correctionsSection = document.getElementById('correctionsSection');
 
+var archiveScreen    = document.getElementById('archiveScreen');
+var archiveBody      = document.getElementById('archiveBody');
+var archiveFooter    = document.getElementById('archiveFooter');
+var archiveBackBtn   = document.getElementById('archiveBackBtn');
+var archiveClearBtn  = document.getElementById('archiveClearBtn');
+var archiveNavBtn    = document.getElementById('archiveBtn');
+
 var originalText = '';
 var lastResult = null;
+var isArchiveReadOnly = false;
 
 // =============================================================
 // Theme
@@ -793,14 +914,9 @@ articleInput.addEventListener('input',function(){
 function showScreen(screen){
   inputScreen.classList.remove('active');
   compareScreen.classList.remove('active');
+  archiveScreen.classList.remove('active');
   screen.classList.add('active');
 }
-
-backBtn.addEventListener('click',function(){
-  showScreen(inputScreen);
-  articleInput.value = originalText;
-  charCount.textContent = originalText.length + '자';
-});
 
 // =============================================================
 // Copy
@@ -1028,6 +1144,179 @@ proofreadBtn.addEventListener('click', function(){
   correctionsToggle.textContent = '접기';
 
   showScreen(compareScreen);
+
+  // Save to archive
+  saveArchive(text, revised, lastResult.stats.totalIssues, lastResult.stats.score);
+});
+
+// =============================================================
+// Archive
+// =============================================================
+var ARCHIVE_KEY = 'news_proofreader_archive';
+var ARCHIVE_MAX = 50;
+
+function getArchive() {
+  try {
+    var data = localStorage.getItem(ARCHIVE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch(e) { return []; }
+}
+
+function setArchive(arr) {
+  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(arr));
+}
+
+function saveArchive(original, revised, corrections, score) {
+  var archive = getArchive();
+  archive.unshift({
+    id: Date.now(),
+    date: new Date().toLocaleString('ko-KR'),
+    original: original,
+    revised: revised,
+    corrections: corrections,
+    score: score,
+    preview: original.substring(0, 50) + (original.length > 50 ? '...' : '')
+  });
+  if (archive.length > ARCHIVE_MAX) {
+    archive = archive.slice(0, ARCHIVE_MAX);
+  }
+  setArchive(archive);
+}
+
+function renderArchiveList() {
+  var archive = getArchive();
+  if (archive.length === 0) {
+    archiveBody.innerHTML = '<div class="archive-empty"><div class="archive-empty-icon">&#128203;</div><div>아직 교정 이력이 없습니다</div></div>';
+    archiveFooter.style.display = 'none';
+    return;
+  }
+  archiveFooter.style.display = '';
+  var html = '';
+  for (var i = 0; i < archive.length; i++) {
+    var item = archive[i];
+    var scoreColor = item.score >= 80 ? 'var(--success)' : item.score >= 50 ? 'var(--warning-color)' : 'var(--danger)';
+    var previewText = item.original.substring(0, 80) + (item.original.length > 80 ? '...' : '');
+    html += '<div class="archive-card" data-archive-id="' + item.id + '">';
+    html += '<button class="archive-card-delete" data-delete-id="' + item.id + '" title="삭제">&times;</button>';
+    html += '<div class="archive-card-top">';
+    html += '<span class="archive-card-date">' + escapeHtml(item.date) + '</span>';
+    html += '<div class="archive-card-stats">';
+    html += '<span class="archive-card-corrections">교정 ' + item.corrections + '건</span>';
+    html += '<span class="archive-card-score" style="color:' + scoreColor + '">' + item.score + '점</span>';
+    html += '</div></div>';
+    html += '<div class="archive-card-preview">' + escapeHtml(previewText) + '</div>';
+    html += '</div>';
+  }
+  archiveBody.innerHTML = html;
+}
+
+function openArchiveItem(id) {
+  var archive = getArchive();
+  var item = null;
+  for (var i = 0; i < archive.length; i++) {
+    if (archive[i].id === id) { item = archive[i]; break; }
+  }
+  if (!item) return;
+
+  isArchiveReadOnly = true;
+
+  // Compute diff
+  var diff = diffWords(item.original, item.revised);
+
+  // Render panels
+  originalPanel.innerHTML = '<p>' + renderDiff(diff, 'left') + '</p>';
+  revisedPanel.innerHTML  = '<p>' + renderDiff(diff, 'right') + '</p>';
+  revisedPanel.contentEditable = 'false';
+
+  // Update header to read-only
+  var panelHeaders = document.querySelectorAll('.panel-header');
+  if (panelHeaders.length >= 2) {
+    panelHeaders[1].textContent = '수정본 (읽기 전용)';
+  }
+
+  // Update revised char count
+  var revisedCharCount = document.getElementById('revisedCharCount');
+  revisedCharCount.textContent = revisedPanel.innerText.length + '자';
+
+  // Re-analyze for stats and corrections
+  var result = analyzeArticle(item.original);
+  renderStats(result.stats);
+  renderCorrections(result.corrections);
+
+  // Reset collapse state
+  correctionsCollapsed = false;
+  correctionsList.style.display = '';
+  correctionsToggle.textContent = '접기';
+
+  // Change back button to go to archive
+  backBtn.textContent = '\u2190 아카이브로 돌아가기';
+
+  showScreen(compareScreen);
+}
+
+function deleteArchiveItem(id) {
+  var archive = getArchive();
+  archive = archive.filter(function(item) { return item.id !== id; });
+  setArchive(archive);
+  renderArchiveList();
+}
+
+function clearArchive() {
+  if (confirm('모든 교정 이력을 삭제하시겠습니까?')) {
+    localStorage.removeItem(ARCHIVE_KEY);
+    renderArchiveList();
+  }
+}
+
+// Archive nav button
+archiveNavBtn.addEventListener('click', function() {
+  renderArchiveList();
+  showScreen(archiveScreen);
+});
+
+// Archive back button
+archiveBackBtn.addEventListener('click', function() {
+  showScreen(inputScreen);
+});
+
+// Archive clear button
+archiveClearBtn.addEventListener('click', clearArchive);
+
+// Archive card click delegation
+archiveBody.addEventListener('click', function(e) {
+  // Check for delete button
+  var deleteBtn = e.target.closest('.archive-card-delete');
+  if (deleteBtn) {
+    e.stopPropagation();
+    var deleteId = parseInt(deleteBtn.getAttribute('data-delete-id'), 10);
+    deleteArchiveItem(deleteId);
+    return;
+  }
+  // Check for card click
+  var card = e.target.closest('.archive-card');
+  if (card) {
+    var archiveId = parseInt(card.getAttribute('data-archive-id'), 10);
+    openArchiveItem(archiveId);
+  }
+});
+
+// Override back button behavior to handle archive read-only mode
+backBtn.addEventListener('click', function(){
+  if (isArchiveReadOnly) {
+    isArchiveReadOnly = false;
+    revisedPanel.contentEditable = 'true';
+    var panelHeaders = document.querySelectorAll('.panel-header');
+    if (panelHeaders.length >= 2) {
+      panelHeaders[1].textContent = '수정본 (편집 가능)';
+    }
+    backBtn.textContent = '\u2190 다시 교정하기';
+    renderArchiveList();
+    showScreen(archiveScreen);
+    return;
+  }
+  showScreen(inputScreen);
+  articleInput.value = originalText;
+  charCount.textContent = originalText.length + '자';
 });
 
 })();
