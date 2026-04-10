@@ -60,6 +60,13 @@ const rules = [
   { pattern: /분렬/g, replacement: "분열", category: "spelling", reason: "'ㄴ' 받침 뒤의 '렬'은 '열'로 적는다.", severity: "error" }, // [harness]
   { pattern: /운률/g, replacement: "운율", category: "spelling", reason: "'ㄴ' 받침 뒤의 '률'은 '율'로 적는다.", severity: "error" }, // [harness]
   { pattern: /진렬/g, replacement: "진열", category: "spelling", reason: "'ㄴ' 받침 뒤의 '렬'은 '열'로 적는다.", severity: "error" }, // [harness]
+  { pattern: /(?<![A-Za-z])([A-Z])씨/g, replacement: '$1 씨', category: 'spelling', reason: '익명 등장인물을 나타내는 알파벳(예: A씨)과 호칭어 "씨"는 띄어 써야 합니다. 한글맞춤법: 성·호에 덧붙는 호칭어는 띄어 쓴다.', severity: 'error' }, // [harness]
+  { pattern: /(?<![가-힣])(박|이|김|최|정|조|강|윤|장|임|한|오|서|신|권|황|안|송|전|홍|유|고|문|손|양|배|백|허|남|심|노|하|곽|성|차|주|우|구|나)씨(는|가|를|의|와|도|에|에게|로부터)/g, replacement: '$1 씨$2', category: 'spelling', reason: '한 글자 성씨 뒤의 호칭어 "씨"는 띄어 써야 합니다. 한글맞춤법: 성·호에 덧붙는 호칭어는 띄어 쓴다.', severity: 'error' }, // [harness]
+  { pattern: /사진설명/g, replacement: '사진 설명', category: 'spelling', reason: '표준국어대사전·우리말샘에서 합성어로 인정하지 않는 표현입니다. 띄어 써야 합니다.', severity: 'error' }, // [harness]
+  { pattern: /기념촬영/g, replacement: '기념 촬영', category: 'spelling', reason: '표준국어대사전·우리말샘에서 합성어로 인정하지 않는 표현입니다. 띄어 써야 합니다.', severity: 'error' }, // [harness]
+  { pattern: /현지시(각|간)/g, replacement: '현지 시각', category: 'spelling', reason: '"현지 시각"은 띄어 써야 하며, "시간"은 구간(선), "시각"은 점을 뜻하므로 특정 시점을 가리킬 때는 "시각"이 바른 표현입니다.', severity: 'error' }, // [harness]
+  { pattern: /한국시(각|간)/g, replacement: '한국 시각', category: 'spelling', reason: '"한국 시각"은 띄어 써야 하며, 특정 시점을 가리킬 때는 "시간" 대신 "시각"이 바른 표현입니다.', severity: 'error' }, // [harness]
+  { pattern: /사이버\s*렉카/g, replacement: '사이버 레커', category: 'spelling', reason: '외래어 표기법에 따라 "사이버 레커"가 바른 표기입니다(견인차 wrecker). 중앙일보 등 주요 매체의 외래어 심의 결과를 따릅니다.', severity: 'error' }, // [harness]
 
   // ============================================================
   // 2. 표현/문체 (expression)
@@ -183,6 +190,8 @@ const rules = [
   { pattern: /초가집/g, replacement: "초가", category: "expression", reason: "'초가(草家)'에 '집'을 덧붙이는 것은 겹말.", severity: "warning" }, // [harness]
   { pattern: /탄신일/g, replacement: "탄신", category: "expression", reason: "'탄신(誕辰)'에 '일'을 덧붙인 '탄신일'은 겹말.", severity: "warning" }, // [harness]
   { pattern: /학부형/g, replacement: "학부모", category: "expression", reason: "'학부형(學父兄)'은 남성 중심 표현. 성 중립적 '학부모'를 쓴다.", severity: "warning" }, // [harness]
+  { pattern: /피해를\s*입은/g, replacement: '피해를 본', category: 'expression', reason: '"피해(被害)" 자체가 이미 "해를 입음"을 뜻하므로 "피해를 입다"는 의미 중복입니다. "피해를 보다/받다"로 쓰는 것이 바릅니다. [한국언론연구원 신문기사의 문체]', severity: 'warning' }, // [harness]
+  { pattern: /보이고\s*있다/g, replacement: '보인다', category: 'expression', reason: '과도한 진행형 표현입니다. 상태·성질을 나타낼 때는 "보이다"로 충분하며 굳이 "-고 있다"를 덧붙일 필요가 없습니다.', severity: 'warning', noAutoReplace: true }, // [harness]
 
   // ============================================================
   // 3. 정확성/윤리 (ethics)
