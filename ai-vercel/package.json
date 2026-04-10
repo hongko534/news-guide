@@ -1,0 +1,14 @@
+{
+  "name": "news-guide-ai-vercel",
+  "version": "0.1.0",
+  "description": "Vercel Edge Function proxying the news-guide 'AI 심화 검토' button to Anthropic Claude.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel deploy --prod"
+  },
+  "devDependencies": {
+    "vercel": "^39.4.2"
+  }
+}

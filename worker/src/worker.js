@@ -15,14 +15,13 @@
 
 import SYSTEM_PROMPT_TEMPLATE from '../prompts/system_prompt.md';
 import RULES_SUMMARY from '../prompts/rules_summary.md';
-import EDITING_GUIDE from '../prompts/editing_guide.md';
-import NEWCOMER_GUIDE from '../prompts/newcomer_guide.md';
 
 // Assemble the full system prompt once at module load time.
+// The lightweight version embeds only the 291-rule compact summary; the
+// full editing-guide transcripts are intentionally omitted to keep the
+// input under the Tier 0 ITPM limit.
 const SYSTEM_PROMPT = SYSTEM_PROMPT_TEMPLATE
-  .replace('{{RULES_SUMMARY}}', RULES_SUMMARY)
-  .replace('{{EDITING_GUIDE}}', EDITING_GUIDE)
-  .replace('{{NEWCOMER_GUIDE}}', NEWCOMER_GUIDE);
+  .replace('{{RULES_SUMMARY}}', RULES_SUMMARY);
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
@@ -134,6 +133,9 @@ async function handleReview(request, env, ctx) {
         'Content-Type': 'application/json',
         'x-api-key': env.ANTHROPIC_API_KEY,
         'anthropic-version': ANTHROPIC_VERSION,
+        // Explicit UA: Cloudflare Workers' default fetch UA can look like a
+        // headless/bot client to Anthropic's rate-limit heuristics.
+        'User-Agent': 'news-guide-ai-worker/1.0 (https://hongko534.github.io/news-guide/)',
         // Prompt caching is now GA — enabled automatically by `cache_control`
         // fields on the `system` blocks. No beta header required.
       },

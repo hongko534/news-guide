@@ -1243,9 +1243,10 @@ var aiReviewBody     = document.getElementById('aiReviewBody');
 var aiReviewClose    = document.getElementById('aiReviewClose');
 var aiReviewBadge    = document.getElementById('aiReviewBadge');
 
-// URL of the Cloudflare Worker that proxies the Anthropic Claude API.
-// The Worker's ALLOWED_ORIGIN var must match this page's origin.
-var AI_WORKER_URL = 'https://news-guide-ai.hongdongzi.workers.dev/review';
+// URL of the Vercel Edge Function that proxies the Anthropic Claude API.
+// Previously tried Cloudflare Workers but the shared egress IP pool was
+// rate-limited by Anthropic — Vercel uses a different pool and works.
+var AI_WORKER_URL = 'https://news-guide-ai.vercel.app/api/review';
 
 var archiveScreen    = document.getElementById('archiveScreen');
 var archiveBody      = document.getElementById('archiveBody');
