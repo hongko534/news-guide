@@ -1,0 +1,25 @@
+name = "news-guide-ai"
+main = "src/worker.js"
+compatibility_date = "2024-11-06"
+
+# Allow importing .md files as raw text so the editing guides and rules
+# summary can be bundled into the Worker at build time.
+rules = [
+  { type = "Text", globs = ["**/*.md"], fallthrough = true }
+]
+
+# CORS allow-list for the frontend origin
+[vars]
+ALLOWED_ORIGIN = "https://hongko534.github.io"
+MODEL = "claude-haiku-4-5"
+MAX_INPUT_CHARS = "10000"
+MAX_OUTPUT_TOKENS = "4000"
+RATE_HOUR = "20"
+RATE_DAY = "100"
+
+# Cloudflare KV for rate limiting (sliding window counters).
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "d8cc9b0d450c4deaa93fb3e5c047aab7"
+
+# Secrets are set via `wrangler secret put ANTHROPIC_API_KEY` — never in this file.

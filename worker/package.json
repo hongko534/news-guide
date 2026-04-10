@@ -1,0 +1,15 @@
+{
+  "name": "news-guide-ai",
+  "version": "0.1.0",
+  "description": "Cloudflare Worker that proxies the news-guide 'AI 심화 검토' button to the Anthropic Claude API.",
+  "private": true,
+  "scripts": {
+    "sync-prompts": "cp ../기사수정_가이드.md prompts/editing_guide.md && cp ../신입기자_기사수정_가이드.md prompts/newcomer_guide.md",
+    "dev": "npm run sync-prompts && wrangler dev",
+    "deploy": "npm run sync-prompts && wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

@@ -286,6 +286,115 @@ body{
   padding:40px 24px;text-align:center;color:var(--text-muted);font-size:.95rem;
 }
 
+/* --- AI Deep Review Section --- */
+.ai-review-trigger{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:var(--radius-sm);
+  background:linear-gradient(135deg,#7c3aed,#4f46e5);
+  color:#fff;border:none;cursor:pointer;
+  font-size:.85rem;font-weight:600;
+  transition:transform var(--transition),box-shadow var(--transition);
+}
+.ai-review-trigger:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(124,58,237,.35)}
+.ai-review-trigger:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.ai-review-section{
+  border-top:1px solid var(--border);
+  background:var(--bg-surface);
+  max-height:50vh;overflow-y:auto;
+}
+.ai-review-section.hidden{display:none}
+.ai-review-header{
+  padding:12px 24px;
+  font-size:.88rem;font-weight:700;color:var(--text);
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(79,70,229,.12));
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  position:sticky;top:0;z-index:1;
+}
+.ai-review-header-left{display:flex;align-items:center;gap:10px}
+.ai-review-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700;
+  background:rgba(124,58,237,.2);color:#a78bfa;
+}
+.ai-review-close{
+  background:none;border:none;color:var(--text-muted);cursor:pointer;
+  font-size:1.1rem;padding:4px 8px;line-height:1;
+}
+.ai-review-close:hover{color:var(--text)}
+.ai-review-body{padding:14px 24px 20px}
+.ai-review-loading{
+  padding:32px 24px;text-align:center;color:var(--text-muted);font-size:.9rem;
+}
+.ai-review-spinner{
+  display:inline-block;width:18px;height:18px;margin-right:8px;
+  border:2px solid var(--border);border-top-color:#a78bfa;border-radius:50%;
+  animation:ai-spin .8s linear infinite;vertical-align:-4px;
+}
+@keyframes ai-spin{to{transform:rotate(360deg)}}
+.ai-review-error{
+  padding:16px 20px;margin:12px 0;
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+  border-radius:var(--radius-sm);color:var(--danger);font-size:.85rem;
+}
+.ai-score-row{
+  display:flex;align-items:center;gap:14px;margin-bottom:12px;
+}
+.ai-score-value{
+  font-size:1.8rem;font-weight:800;
+  background:linear-gradient(135deg,#a78bfa,#818cf8);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  line-height:1;
+}
+.ai-score-label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+.ai-overall{
+  padding:12px 14px;margin-bottom:16px;
+  background:var(--bg-elevated);border-radius:var(--radius-sm);
+  font-size:.9rem;line-height:1.6;color:var(--text);
+}
+.ai-section-title{
+  font-size:.78rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--text-muted);
+  margin:16px 0 8px;
+}
+.ai-issue-list{list-style:none;padding:0;margin:0}
+.ai-issue-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 12px;margin-bottom:6px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-muted);
+  font-size:.85rem;line-height:1.55;
+}
+.ai-issue-icon{
+  flex-shrink:0;width:20px;height:20px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:700;margin-top:1px;
+}
+.ai-issue-icon.critical{background:rgba(239,68,68,.2);color:var(--danger)}
+.ai-issue-icon.warning{background:rgba(245,158,11,.2);color:var(--warning-color)}
+.ai-issue-icon.suggestion{background:rgba(59,130,246,.2);color:var(--info-color)}
+.ai-issue-body{flex:1;min-width:0}
+.ai-issue-change .original{
+  text-decoration:line-through;color:var(--diff-del-text);
+  background:var(--diff-del-bg);border-radius:3px;padding:0 4px;
+}
+.ai-issue-change .arrow{color:var(--text-muted);margin:0 6px}
+.ai-issue-change .suggestion{
+  color:var(--diff-ins-text);background:var(--diff-ins-bg);
+  border-radius:3px;padding:0 4px;
+}
+.ai-issue-explanation{color:var(--text-muted);font-size:.8rem;margin-top:4px}
+.ai-issue-type{
+  flex-shrink:0;font-size:.68rem;font-weight:600;
+  padding:2px 8px;border-radius:10px;
+  background:var(--bg-elevated);color:var(--text-muted);
+  white-space:nowrap;margin-top:2px;
+}
+.ai-structural-list{list-style:disc;padding-left:20px;margin:0}
+.ai-structural-list li{
+  font-size:.85rem;color:var(--text);line-height:1.6;margin-bottom:4px;
+}
+
 /* --- Responsive --- */
 /* --- Archive Screen --- */
 .archive-screen{
@@ -551,6 +660,7 @@ body{
       <button class="btn-secondary" id="backBtn">&#8592; 다시 교정하기</button>
       <div class="toolbar-stats" id="toolbarStats"></div>
       <div class="toolbar-spacer"></div>
+      <button class="ai-review-trigger" id="aiReviewBtn" title="대규모 언어 모델로 기사 전반을 심화 검토">&#129302; AI 심화 검토</button>
       <button class="btn-secondary" id="copyBtn">수정본 복사</button>
     </div>
     <div class="compare-panels">
@@ -570,6 +680,22 @@ body{
         <button class="corrections-toggle" id="correctionsToggle">접기</button>
       </div>
       <ul class="corrections-list" id="correctionsList"></ul>
+    </div>
+
+    <!-- AI Deep Review Section — hidden by default -->
+    <div class="ai-review-section hidden" id="aiReviewSection">
+      <div class="ai-review-header">
+        <div class="ai-review-header-left">
+          <span>&#129302; AI 심화 검토</span>
+          <span class="ai-review-badge" id="aiReviewBadge">Claude Sonnet</span>
+        </div>
+        <button class="ai-review-close" id="aiReviewClose" title="닫기">&times;</button>
+      </div>
+      <div class="ai-review-body" id="aiReviewBody">
+        <div class="ai-review-loading" id="aiReviewLoading">
+          <span class="ai-review-spinner"></span>분석 중입니다&hellip; 길면 10초 정도 걸릴 수 있습니다.
+        </div>
+      </div>
     </div>
   </div>
 </main>
@@ -1111,6 +1237,16 @@ var correctionsTitle = document.getElementById('correctionsTitle');
 var correctionsToggle = document.getElementById('correctionsToggle');
 var correctionsSection = document.getElementById('correctionsSection');
 
+var aiReviewBtn      = document.getElementById('aiReviewBtn');
+var aiReviewSection  = document.getElementById('aiReviewSection');
+var aiReviewBody     = document.getElementById('aiReviewBody');
+var aiReviewClose    = document.getElementById('aiReviewClose');
+var aiReviewBadge    = document.getElementById('aiReviewBadge');
+
+// URL of the Cloudflare Worker that proxies the Anthropic Claude API.
+// The Worker's ALLOWED_ORIGIN var must match this page's origin.
+var AI_WORKER_URL = 'https://news-guide-ai.hongdongzi.workers.dev/review';
+
 var archiveScreen    = document.getElementById('archiveScreen');
 var archiveBody      = document.getElementById('archiveBody');
 var archiveFooter    = document.getElementById('archiveFooter');
@@ -1434,6 +1570,133 @@ copyBtn.addEventListener('click',function(){
 });
 
 // =============================================================
+// AI Deep Review
+// =============================================================
+function escapeHtml(s){
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function renderAiReviewError(message){
+  aiReviewBody.innerHTML = '<div class="ai-review-error">' + escapeHtml(message) + '</div>';
+}
+
+function renderAiReviewResult(review, model){
+  if (!review || typeof review !== 'object') {
+    renderAiReviewError('모델 응답을 해석하지 못했습니다.');
+    return;
+  }
+  if (model) aiReviewBadge.textContent = model;
+
+  var html = '';
+
+  if (typeof review.score === 'number') {
+    html += '<div class="ai-score-row">';
+    html += '<div class="ai-score-value">' + Math.round(review.score) + '</div>';
+    html += '<div class="ai-score-label">AI 평점 / 100</div>';
+    html += '</div>';
+  }
+
+  if (review.overall_assessment) {
+    html += '<div class="ai-overall">' + escapeHtml(review.overall_assessment) + '</div>';
+  }
+
+  if (Array.isArray(review.issues) && review.issues.length > 0) {
+    html += '<div class="ai-section-title">지적 사항 (' + review.issues.length + '건)</div>';
+    html += '<ul class="ai-issue-list">';
+    var order = { critical: 0, warning: 1, suggestion: 2 };
+    var issues = review.issues.slice().sort(function(a,b){
+      return (order[a.severity] || 3) - (order[b.severity] || 3);
+    });
+    for (var i = 0; i < issues.length; i++) {
+      var it = issues[i];
+      var sev = it.severity || 'suggestion';
+      var iconLetter = sev === 'critical' ? '!' : (sev === 'warning' ? '⚠' : '·');
+      html += '<li class="ai-issue-item">';
+      html += '<div class="ai-issue-icon ' + escapeHtml(sev) + '">' + iconLetter + '</div>';
+      html += '<div class="ai-issue-body">';
+      if (it.original || it.suggestion) {
+        html += '<div class="ai-issue-change">';
+        if (it.original)    html += '<span class="original">' + escapeHtml(it.original) + '</span>';
+        if (it.original && it.suggestion) html += '<span class="arrow">→</span>';
+        if (it.suggestion)  html += '<span class="suggestion">' + escapeHtml(it.suggestion) + '</span>';
+        html += '</div>';
+      }
+      if (it.explanation) html += '<div class="ai-issue-explanation">' + escapeHtml(it.explanation) + '</div>';
+      html += '</div>';
+      if (it.type) html += '<div class="ai-issue-type">' + escapeHtml(it.type) + '</div>';
+      html += '</li>';
+    }
+    html += '</ul>';
+  } else {
+    html += '<div class="ai-section-title">지적 사항</div>';
+    html += '<div class="no-issues" style="padding:16px 0">추가 교정할 부분이 발견되지 않았습니다. 잘 작성된 기사입니다.</div>';
+  }
+
+  if (Array.isArray(review.structural_notes) && review.structural_notes.length > 0) {
+    html += '<div class="ai-section-title">구조적 관찰</div>';
+    html += '<ul class="ai-structural-list">';
+    for (var j = 0; j < review.structural_notes.length; j++) {
+      html += '<li>' + escapeHtml(review.structural_notes[j]) + '</li>';
+    }
+    html += '</ul>';
+  }
+
+  aiReviewBody.innerHTML = html;
+}
+
+async function runAiReview(){
+  if (!originalText || !originalText.trim()) {
+    alert('먼저 기사를 입력하고 교정하세요.');
+    return;
+  }
+  if (AI_WORKER_URL.indexOf('REPLACE_ME') !== -1) {
+    renderAiReviewError('AI Worker URL이 아직 설정되지 않았습니다. 관리자에게 문의하세요.');
+    aiReviewSection.classList.remove('hidden');
+    aiReviewSection.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    return;
+  }
+
+  aiReviewBtn.disabled = true;
+  aiReviewSection.classList.remove('hidden');
+  aiReviewBody.innerHTML = '<div class="ai-review-loading"><span class="ai-review-spinner"></span>분석 중입니다&hellip; 길면 10초 정도 걸릴 수 있습니다.</div>';
+  setTimeout(function(){ aiReviewSection.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 30);
+
+  try {
+    var resp = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: originalText }),
+    });
+    var data = null;
+    try { data = await resp.json(); } catch(_) {}
+    if (!resp.ok) {
+      var msg = data && data.error && data.error.message
+        ? '(' + data.error.code + ') ' + data.error.message
+        : 'HTTP ' + resp.status;
+      if (resp.status === 429) msg = '호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.';
+      if (resp.status === 403) msg = '이 페이지에서는 AI 검토를 사용할 수 없습니다 (origin 제한).';
+      if (resp.status === 500 && data && data.error && data.error.code === 'not_configured')
+        msg = 'AI Worker에 API 키가 설정되지 않았습니다. 관리자에게 문의하세요.';
+      renderAiReviewError('AI 검토 실패: ' + msg);
+      return;
+    }
+    renderAiReviewResult(data && data.review, data && data.model);
+  } catch (e) {
+    renderAiReviewError('네트워크 오류: ' + (e && e.message ? e.message : String(e)));
+  } finally {
+    aiReviewBtn.disabled = false;
+  }
+}
+
+aiReviewBtn.addEventListener('click', runAiReview);
+aiReviewClose.addEventListener('click', function(){
+  aiReviewSection.classList.add('hidden');
+});
+
+// =============================================================
 // Corrections list toggle
 // =============================================================
 var correctionsCollapsed = false;
@@ -1621,6 +1884,10 @@ proofreadBtn.addEventListener('click', function(){
   lastResult = out.result;
 
   originalText = text;
+
+  // Reset AI review state for a fresh article
+  aiReviewSection.classList.add('hidden');
+  aiReviewBody.innerHTML = '';
 
   // Compute diff
   var diff = diffWords(text, revised);
