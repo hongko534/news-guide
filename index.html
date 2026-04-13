@@ -1260,10 +1260,9 @@ var changePwBtn      = document.getElementById('changePwBtn');
 
 var originalText = '';
 var lastResult = null;
+var currentArchiveId = null;
 var isArchiveReadOnly = false;
 var isAdminLoggedIn = false;
-var isReporterMode = false;
-var reporterAccessCode = '';
 
 // =============================================================
 // SHA-256 Hash
@@ -1635,7 +1634,20 @@ async function runAiReview(){
       renderAiReviewError('AI 검토 실패: ' + msg);
       return;
     }
-    renderAiReviewResult(data && data.review, data && data.model);
+    var review = data && data.review;
+    renderAiReviewResult(review, data && data.model);
+    // Save AI review to archive
+    if (review && currentArchiveId) {
+      var archive = getArchive();
+      for (var i = 0; i < archive.length; i++) {
+        if (archive[i].id === currentArchiveId) {
+          archive[i].aiReview = review;
+          archive[i].aiModel = (data && data.model) || '';
+          break;
+        }
+      }
+      setArchive(archive);
+    }
   } catch (e) {
     renderAiReviewError('네트워크 오류: ' + (e && e.message ? e.message : String(e)));
   } finally {
@@ -1869,7 +1881,7 @@ proofreadBtn.addEventListener('click', function(){
   showScreen(compareScreen);
 
   // Save to archive
-  saveArchive(text, revised, lastResult.stats.totalIssues, lastResult.stats.score);
+  currentArchiveId = saveArchive(text, revised, lastResult.stats.totalIssues, lastResult.stats.score);
 });
 
 // =============================================================
@@ -1891,19 +1903,23 @@ function setArchive(arr) {
 
 function saveArchive(original, revised, corrections, score) {
   var archive = getArchive();
+  var id = Date.now();
   archive.unshift({
-    id: Date.now(),
+    id: id,
     date: new Date().toLocaleString('ko-KR'),
     original: original,
     revised: revised,
     corrections: corrections,
     score: score,
-    preview: original.substring(0, 50) + (original.length > 50 ? '...' : '')
+    preview: original.substring(0, 50) + (original.length > 50 ? '...' : ''),
+    aiReview: null,
+    aiModel: ''
   });
   if (archive.length > ARCHIVE_MAX) {
     archive = archive.slice(0, ARCHIVE_MAX);
   }
   setArchive(archive);
+  return id;
 }
 
 function renderArchiveList() {
@@ -1938,6 +1954,7 @@ function renderArchiveList() {
     html += '<span class="archive-card-date">' + escapeHtml(item.date) + '</span>';
     html += '<div class="archive-card-stats">';
     html += '<span class="archive-card-corrections">교정 ' + item.corrections + '건</span>';
+    if (item.aiReview) html += '<span class="archive-card-corrections" style="color:var(--accent)">AI 검토</span>';
     html += '<span class="archive-card-score" style="color:' + scoreColor + '">' + item.score + '점</span>';
     html += '</div></div>';
     html += '<div class="archive-card-preview">' + escapeHtml(previewText) + '</div>';
@@ -1988,6 +2005,19 @@ function openArchiveItem(id) {
   backBtn.textContent = '\u2190 아카이브로 돌아가기';
 
   copyBtn.style.display = '';
+
+  // Restore AI review if saved
+  if (item.aiReview) {
+    aiReviewSection.classList.remove('hidden');
+    renderAiReviewResult(item.aiReview, item.aiModel);
+  } else {
+    aiReviewSection.classList.add('hidden');
+    aiReviewBody.innerHTML = '';
+  }
+
+  // Set currentArchiveId so new AI review can be saved to this item
+  currentArchiveId = item.id;
+  originalText = item.original;
 
   showScreen(compareScreen);
 }
