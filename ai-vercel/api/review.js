@@ -170,8 +170,13 @@ function jsonError(status, code, message) {
 }
 
 function stripCodeFence(text) {
+  // 완전한 코드 펜스 (열기 + 닫기)
   const m = text.match(/^\s*```(?:json)?\s*([\s\S]*?)\s*```\s*$/);
-  return m ? m[1] : text;
+  if (m) return m[1];
+  // 열기만 있고 닫기가 없는 경우 (응답이 잘렸을 때)
+  const open = text.match(/^\s*```(?:json)?\s*([\s\S]*)$/);
+  if (open) return open[1];
+  return text;
 }
 
 function repairTruncatedJson(text) {
