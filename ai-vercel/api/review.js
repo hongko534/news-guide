@@ -128,7 +128,7 @@ export default async function handler(request) {
   try {
     review = JSON.parse(stripCodeFence(assistantText));
   } catch (e) {
-    return corsResponse(allowedOrigin, jsonError(502, 'model_invalid_json', assistantText.slice(0, 1200)));
+    return corsResponse(allowedOrigin, jsonError(502, 'model_invalid_json', 'AI 응답을 JSON으로 해석하지 못했습니다. 다시 시도해주세요.'));
   }
 
   return corsResponse(

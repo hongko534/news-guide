@@ -1593,41 +1593,53 @@ function renderAiReviewResult(review, model){
 
   var html = '';
 
-  if (typeof review.score === 'number') {
+  // 한글 키 우선, 영문 키 폴백 (기존 캐시 호환)
+  var score = typeof review['점수'] === 'number' ? review['점수'] : review.score;
+  var overall = review['전반적_평가'] || review.overall_assessment;
+  var issues = review['지적사항'] || review.issues;
+  var structNotes = review['구조적_관찰'] || review.structural_notes;
+
+  if (typeof score === 'number') {
     html += '<div class="ai-score-row">';
-    html += '<div class="ai-score-value">' + Math.round(review.score) + '</div>';
+    html += '<div class="ai-score-value">' + Math.round(score) + '</div>';
     html += '<div class="ai-score-label">AI 평점 / 100</div>';
     html += '</div>';
   }
 
-  if (review.overall_assessment) {
-    html += '<div class="ai-overall">' + escapeHtml(review.overall_assessment) + '</div>';
+  if (overall) {
+    html += '<div class="ai-overall">' + escapeHtml(overall) + '</div>';
   }
 
-  if (Array.isArray(review.issues) && review.issues.length > 0) {
-    html += '<div class="ai-section-title">지적 사항 (' + review.issues.length + '건)</div>';
+  if (Array.isArray(issues) && issues.length > 0) {
+    html += '<div class="ai-section-title">지적 사항 (' + issues.length + '건)</div>';
     html += '<ul class="ai-issue-list">';
     var order = { critical: 0, warning: 1, suggestion: 2 };
-    var issues = review.issues.slice().sort(function(a,b){
-      return (order[a.severity] || 3) - (order[b.severity] || 3);
+    var sorted = issues.slice().sort(function(a,b){
+      var sa = a['심각도'] || a.severity;
+      var sb = b['심각도'] || b.severity;
+      return (order[sa] || 3) - (order[sb] || 3);
     });
-    for (var i = 0; i < issues.length; i++) {
-      var it = issues[i];
-      var sev = it.severity || 'suggestion';
+    for (var i = 0; i < sorted.length; i++) {
+      var it = sorted[i];
+      var sev = it['심각도'] || it.severity || 'suggestion';
+      var orig = it['원문'] || it.original;
+      var sugg = it['제안'] || it.suggestion;
+      var expl = it['설명'] || it.explanation;
+      var typ = it['유형'] || it.type;
       var iconLetter = sev === 'critical' ? '!' : (sev === 'warning' ? '⚠' : '·');
       html += '<li class="ai-issue-item">';
       html += '<div class="ai-issue-icon ' + escapeHtml(sev) + '">' + iconLetter + '</div>';
       html += '<div class="ai-issue-body">';
-      if (it.original || it.suggestion) {
+      if (orig || sugg) {
         html += '<div class="ai-issue-change">';
-        if (it.original)    html += '<span class="original">' + escapeHtml(it.original) + '</span>';
-        if (it.original && it.suggestion) html += '<span class="arrow">→</span>';
-        if (it.suggestion)  html += '<span class="suggestion">' + escapeHtml(it.suggestion) + '</span>';
+        if (orig)          html += '<span class="original">' + escapeHtml(orig) + '</span>';
+        if (orig && sugg)  html += '<span class="arrow">→</span>';
+        if (sugg)          html += '<span class="suggestion">' + escapeHtml(sugg) + '</span>';
         html += '</div>';
       }
-      if (it.explanation) html += '<div class="ai-issue-explanation">' + escapeHtml(it.explanation) + '</div>';
+      if (expl) html += '<div class="ai-issue-explanation">' + escapeHtml(expl) + '</div>';
       html += '</div>';
-      if (it.type) html += '<div class="ai-issue-type">' + escapeHtml(it.type) + '</div>';
+      if (typ) html += '<div class="ai-issue-type">' + escapeHtml(typ) + '</div>';
       html += '</li>';
     }
     html += '</ul>';
@@ -1636,11 +1648,11 @@ function renderAiReviewResult(review, model){
     html += '<div class="no-issues" style="padding:16px 0">추가 교정할 부분이 발견되지 않았습니다. 잘 작성된 기사입니다.</div>';
   }
 
-  if (Array.isArray(review.structural_notes) && review.structural_notes.length > 0) {
+  if (Array.isArray(structNotes) && structNotes.length > 0) {
     html += '<div class="ai-section-title">구조적 관찰</div>';
     html += '<ul class="ai-structural-list">';
-    for (var j = 0; j < review.structural_notes.length; j++) {
-      html += '<li>' + escapeHtml(review.structural_notes[j]) + '</li>';
+    for (var j = 0; j < structNotes.length; j++) {
+      html += '<li>' + escapeHtml(structNotes[j]) + '</li>';
     }
     html += '</ul>';
   }
