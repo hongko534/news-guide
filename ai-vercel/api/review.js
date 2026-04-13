@@ -27,7 +27,7 @@ export default async function handler(request) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://hongko534.github.io';
   const model = process.env.MODEL || 'claude-haiku-4-5';
   const maxInputChars = Number(process.env.MAX_INPUT_CHARS || '10000');
-  const maxOutputTokens = Number(process.env.MAX_OUTPUT_TOKENS || '1500');
+  const maxOutputTokens = Number(process.env.MAX_OUTPUT_TOKENS || '3000');
   const rateHour = Number(process.env.RATE_HOUR || '20');
   const rateDay = Number(process.env.RATE_DAY || '100');
 
@@ -128,7 +128,12 @@ export default async function handler(request) {
   try {
     review = JSON.parse(stripCodeFence(assistantText));
   } catch (e) {
-    return corsResponse(allowedOrigin, jsonError(502, 'model_invalid_json', 'AI 응답을 JSON으로 해석하지 못했습니다. 다시 시도해주세요.'));
+    // 토큰 한도로 JSON이 잘렸을 수 있으므로 복구 시도
+    try {
+      review = JSON.parse(repairTruncatedJson(stripCodeFence(assistantText)));
+    } catch (_) {
+      return corsResponse(allowedOrigin, jsonError(502, 'model_invalid_json', 'AI 응답을 JSON으로 해석하지 못했습니다. 다시 시도해주세요.'));
+    }
   }
 
   return corsResponse(
@@ -167,6 +172,29 @@ function jsonError(status, code, message) {
 function stripCodeFence(text) {
   const m = text.match(/^\s*```(?:json)?\s*([\s\S]*?)\s*```\s*$/);
   return m ? m[1] : text;
+}
+
+function repairTruncatedJson(text) {
+  // 잘린 문자열 값을 닫고, 열린 배열/객체 괄호를 순서대로 닫는다
+  let s = text.trimEnd();
+  // 닫히지 않은 문자열 닫기
+  const quotes = (s.match(/"/g) || []).length;
+  if (quotes % 2 !== 0) s += '"';
+  // 마지막 불완전한 속성(키만 있고 값이 없는 경우) 제거
+  s = s.replace(/,\s*"[^"]*"\s*:\s*$/, '');
+  // 열린 괄호를 역순으로 닫기
+  const stack = [];
+  let inStr = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '"' && (i === 0 || s[i - 1] !== '\\')) { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{' || c === '[') stack.push(c === '{' ? '}' : ']');
+    else if (c === '}' || c === ']') stack.pop();
+  }
+  // 마지막에 쉼표가 남아있으면 제거
+  s = s.replace(/,\s*$/, '');
+  return s + stack.reverse().join('');
 }
 
 function checkAndIncrement(ip, hourLimit, dayLimit) {
