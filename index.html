@@ -658,6 +658,7 @@ body{
   <div class="compare-screen">
     <div class="compare-toolbar">
       <button class="btn-secondary" id="backBtn">&#8592; 다시 교정하기</button>
+      <button class="btn-secondary" id="newArticleBtn" title="초기 화면으로 돌아가기">&#128221; 새 기사</button>
       <div class="toolbar-stats" id="toolbarStats"></div>
       <div class="toolbar-spacer"></div>
       <button class="ai-review-trigger" id="aiReviewBtn" title="대규모 언어 모델로 기사 전반을 심화 검토">&#129302; AI 심화 검토</button>
@@ -1227,6 +1228,7 @@ var charCount      = document.getElementById('charCount');
 var proofreadBtn   = document.getElementById('proofreadBtn');
 var errorContainer = document.getElementById('errorContainer');
 var backBtn        = document.getElementById('backBtn');
+var newArticleBtn  = document.getElementById('newArticleBtn');
 var copyBtn        = document.getElementById('copyBtn');
 var originalPanel  = document.getElementById('originalPanel');
 var revisedPanel   = document.getElementById('revisedPanel');
@@ -1357,46 +1359,13 @@ function showSetupPasswordModal() {
 // =============================================================
 function showAccessModal() {
   var html = '';
-  html += '<div class="modal-tabs">';
-  html += '<button class="modal-tab active" data-tab="admin">관리자</button>';
-  html += '<button class="modal-tab" data-tab="reporter">기자</button>';
-  html += '</div>';
-  html += '<div class="modal-tab-content active" id="tabAdmin">';
   html += '<div class="modal-body">';
   html += '<div class="modal-error" id="adminLoginError"></div>';
   html += '<label>관리자 비밀번호</label>';
   html += '<input type="password" id="adminPwInput" placeholder="비밀번호 입력">';
   html += '<button class="btn-primary" id="adminLoginBtn">로그인</button>';
   html += '</div>';
-  html += '</div>';
-  html += '<div class="modal-tab-content" id="tabReporter">';
-  html += '<div class="modal-body">';
-  html += '<div class="modal-error" id="reporterCodeError"></div>';
-  html += '<label>접근 코드 (6자리)</label>';
-  html += '<input type="text" id="reporterCodeInput" class="access-code-input" placeholder="AB3K7P" maxlength="6" autocomplete="off">';
-  html += '<button class="btn-primary" id="reporterAccessBtn">확인</button>';
-  html += '</div>';
-  html += '</div>';
   var modal = createModal(html);
-
-  // Tab switching
-  var tabs = modal.querySelectorAll('.modal-tab');
-  var tabContents = modal.querySelectorAll('.modal-tab-content');
-  tabs.forEach(function(tab){
-    tab.addEventListener('click', function(){
-      tabs.forEach(function(t){ t.classList.remove('active'); });
-      tabContents.forEach(function(tc){ tc.classList.remove('active'); });
-      tab.classList.add('active');
-      var target = tab.getAttribute('data-tab');
-      if (target === 'admin') {
-        modal.querySelector('#tabAdmin').classList.add('active');
-        modal.querySelector('#adminPwInput').focus();
-      } else {
-        modal.querySelector('#tabReporter').classList.add('active');
-        modal.querySelector('#reporterCodeInput').focus();
-      }
-    });
-  });
 
   // Admin login
   var adminPwInput = modal.querySelector('#adminPwInput');
@@ -1411,7 +1380,6 @@ function showAccessModal() {
     if (hash === stored) {
       modal.remove();
       isAdminLoggedIn = true;
-      isReporterMode = false;
       renderArchiveList();
       showScreen(archiveScreen);
     } else {
@@ -1422,35 +1390,6 @@ function showAccessModal() {
   });
   adminPwInput.addEventListener('keydown', function(e){
     if (e.key === 'Enter') adminLoginBtn.click();
-  });
-
-  // Reporter access
-  var reporterCodeInput = modal.querySelector('#reporterCodeInput');
-  var reporterAccessBtn = modal.querySelector('#reporterAccessBtn');
-  var reporterErr = modal.querySelector('#reporterCodeError');
-  reporterCodeInput.addEventListener('input', function(){
-    reporterCodeInput.value = reporterCodeInput.value.toUpperCase();
-  });
-  reporterAccessBtn.addEventListener('click', function(){
-    var code = reporterCodeInput.value.trim().toUpperCase();
-    if (code.length !== 6) { reporterErr.textContent = '6자리 코드를 입력해주세요.'; return; }
-    var archive = getArchive();
-    var found = archive.filter(function(item){ return item.accessCode === code; });
-    if (found.length === 0) {
-      reporterErr.textContent = '일치하는 기사를 찾을 수 없습니다.';
-      reporterCodeInput.value = '';
-      reporterCodeInput.focus();
-      return;
-    }
-    modal.remove();
-    isAdminLoggedIn = false;
-    isReporterMode = true;
-    reporterAccessCode = code;
-    renderArchiveList();
-    showScreen(archiveScreen);
-  });
-  reporterCodeInput.addEventListener('keydown', function(e){
-    if (e.key === 'Enter') reporterAccessBtn.click();
   });
 }
 
@@ -1930,10 +1869,7 @@ proofreadBtn.addEventListener('click', function(){
   showScreen(compareScreen);
 
   // Save to archive
-  var accessCode = saveArchive(text, revised, lastResult.stats.totalIssues, lastResult.stats.score);
-
-  // Show access code modal
-  showAccessCodeModal(accessCode);
+  saveArchive(text, revised, lastResult.stats.totalIssues, lastResult.stats.score);
 });
 
 // =============================================================
@@ -1955,7 +1891,6 @@ function setArchive(arr) {
 
 function saveArchive(original, revised, corrections, score) {
   var archive = getArchive();
-  var code = generateAccessCode();
   archive.unshift({
     id: Date.now(),
     date: new Date().toLocaleString('ko-KR'),
@@ -1963,36 +1898,16 @@ function saveArchive(original, revised, corrections, score) {
     revised: revised,
     corrections: corrections,
     score: score,
-    preview: original.substring(0, 50) + (original.length > 50 ? '...' : ''),
-    accessCode: code
+    preview: original.substring(0, 50) + (original.length > 50 ? '...' : '')
   });
   if (archive.length > ARCHIVE_MAX) {
     archive = archive.slice(0, ARCHIVE_MAX);
   }
   setArchive(archive);
-  return code;
-}
-
-// Migrate legacy archive items without accessCode
-function migrateArchiveAccessCodes() {
-  var archive = getArchive();
-  var changed = false;
-  for (var i = 0; i < archive.length; i++) {
-    if (!archive[i].accessCode) {
-      archive[i].accessCode = generateAccessCode();
-      changed = true;
-    }
-  }
-  if (changed) setArchive(archive);
 }
 
 function renderArchiveList() {
   var archive = getArchive();
-
-  // In reporter mode, filter by access code
-  if (isReporterMode && !isAdminLoggedIn) {
-    archive = archive.filter(function(item){ return item.accessCode === reporterAccessCode; });
-  }
 
   if (archive.length === 0) {
     archiveBody.innerHTML = '<div class="archive-empty"><div class="archive-empty-icon">&#128203;</div><div>아직 교정 이력이 없습니다</div></div>';
@@ -2026,12 +1941,6 @@ function renderArchiveList() {
     html += '<span class="archive-card-score" style="color:' + scoreColor + '">' + item.score + '점</span>';
     html += '</div></div>';
     html += '<div class="archive-card-preview">' + escapeHtml(previewText) + '</div>';
-    if (isAdminLoggedIn && item.accessCode) {
-      html += '<div class="archive-card-code">';
-      html += '<span class="archive-card-code-text">' + escapeHtml(item.accessCode) + '</span>';
-      html += '<button class="archive-card-code-copy" data-copy-code="' + escapeHtml(item.accessCode) + '" title="코드 복사">&#128203;</button>';
-      html += '</div>';
-    }
     html += '</div>';
   }
   archiveBody.innerHTML = html;
@@ -2078,8 +1987,7 @@ function openArchiveItem(id) {
   // Change back button to go to archive
   backBtn.textContent = '\u2190 아카이브로 돌아가기';
 
-  // Hide copy button in reporter mode
-  copyBtn.style.display = (isReporterMode && !isAdminLoggedIn) ? 'none' : '';
+  copyBtn.style.display = '';
 
   showScreen(compareScreen);
 }
@@ -2119,17 +2027,6 @@ archiveNavBtn.addEventListener('click', function() {
 // Archive card click delegation
 archiveBody.addEventListener('click', function(e) {
   // Check for code copy button
-  var codeCopyBtn = e.target.closest('.archive-card-code-copy');
-  if (codeCopyBtn) {
-    e.stopPropagation();
-    var code = codeCopyBtn.getAttribute('data-copy-code');
-    navigator.clipboard.writeText(code).then(function(){
-      copyToast.textContent = '접근 코드가 복사되었습니다';
-      copyToast.classList.add('show');
-      setTimeout(function(){ copyToast.classList.remove('show'); copyToast.textContent = '클립보드에 복사되었습니다'; }, 2000);
-    });
-    return;
-  }
   // Check for delete button
   var deleteBtn = e.target.closest('.archive-card-delete');
   if (deleteBtn) {
@@ -2166,10 +2063,23 @@ backBtn.addEventListener('click', function(){
   charCount.textContent = originalText.length + '자';
 });
 
+// New article button — reset to blank initial screen
+newArticleBtn.addEventListener('click', function(){
+  originalText = '';
+  articleInput.value = '';
+  charCount.textContent = '0자';
+  originalPanel.innerHTML = '';
+  revisedPanel.innerHTML = '';
+  toolbarStats.innerHTML = '';
+  correctionsList.innerHTML = '';
+  aiReviewSection.classList.add('hidden');
+  aiReviewBody.innerHTML = '';
+  showScreen(inputScreen);
+  articleInput.focus();
+});
+
 // Archive back button — reset modes
 archiveBackBtn.addEventListener('click', function() {
-  isReporterMode = false;
-  reporterAccessCode = '';
   showScreen(inputScreen);
 });
 
