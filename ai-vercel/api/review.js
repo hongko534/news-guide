@@ -25,7 +25,7 @@ const rateLimitStore = new Map();
 export default async function handler(request) {
   const url = new URL(request.url);
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://hongko534.github.io';
-  const model = 'claude-sonnet-4-6';
+  const model = 'claude-opus-4-6';
   const maxInputChars = Number(process.env.MAX_INPUT_CHARS || '10000');
   const maxOutputTokens = Number(process.env.MAX_OUTPUT_TOKENS || '4096');
   const rateHour = Number(process.env.RATE_HOUR || '20');
