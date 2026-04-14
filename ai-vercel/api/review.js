@@ -27,7 +27,7 @@ export default async function handler(request) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://hongko534.github.io';
   const model = process.env.MODEL || 'claude-haiku-4-5';
   const maxInputChars = Number(process.env.MAX_INPUT_CHARS || '10000');
-  const maxOutputTokens = Number(process.env.MAX_OUTPUT_TOKENS || '3000');
+  const maxOutputTokens = Number(process.env.MAX_OUTPUT_TOKENS || '4096');
   const rateHour = Number(process.env.RATE_HOUR || '20');
   const rateDay = Number(process.env.RATE_DAY || '100');
 
