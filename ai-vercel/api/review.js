@@ -180,24 +180,39 @@ function stripCodeFence(text) {
 }
 
 function repairTruncatedJson(text) {
-  // 잘린 문자열 값을 닫고, 열린 배열/객체 괄호를 순서대로 닫는다
-  let s = text.trimEnd();
-  // 닫히지 않은 문자열 닫기
-  const quotes = (s.match(/"/g) || []).length;
-  if (quotes % 2 !== 0) s += '"';
-  // 마지막 불완전한 속성(키만 있고 값이 없는 경우) 제거
-  s = s.replace(/,\s*"[^"]*"\s*:\s*$/, '');
-  // 열린 괄호를 역순으로 닫기
-  const stack = [];
-  let inStr = false;
+  // JSON 시작점 찾기 (앞에 텍스트가 붙어있을 수 있음)
+  let s = text;
+  const jsonStart = s.indexOf('{');
+  if (jsonStart < 0) return text;
+  s = s.slice(jsonStart).trimEnd();
+
+  // JSON 뒤에 붙은 비-JSON 텍스트 제거 (닫힌 후 추가 텍스트)
+  let depth = 0, inStr = false, jsonEnd = -1;
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
     if (c === '"' && (i === 0 || s[i - 1] !== '\\')) { inStr = !inStr; continue; }
     if (inStr) continue;
+    if (c === '{' || c === '[') depth++;
+    else if (c === '}' || c === ']') { depth--; if (depth === 0) { jsonEnd = i; break; } }
+  }
+  if (jsonEnd > 0) return s.slice(0, jsonEnd + 1);
+
+  // JSON이 잘린 경우: 닫히지 않은 문자열 닫기
+  const quotes = (s.match(/"/g) || []).length;
+  if (quotes % 2 !== 0) s += '"';
+  // 불완전한 속성 제거
+  s = s.replace(/,\s*"[^"]*"\s*:\s*$/, '');
+  s = s.replace(/,\s*"[^"]*"\s*:\s*"[^"]*$/, '');
+  // 열린 괄호를 역순으로 닫기
+  const stack = [];
+  let inStr2 = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '"' && (i === 0 || s[i - 1] !== '\\')) { inStr2 = !inStr2; continue; }
+    if (inStr2) continue;
     if (c === '{' || c === '[') stack.push(c === '{' ? '}' : ']');
     else if (c === '}' || c === ']') stack.pop();
   }
-  // 마지막에 쉼표가 남아있으면 제거
   s = s.replace(/,\s*$/, '');
   return s + stack.reverse().join('');
 }
