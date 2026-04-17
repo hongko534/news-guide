@@ -1,29 +1,16 @@
-// news-guide-ai — Vercel Edge Function
+// news-guide-ai — Vercel Serverless Function (Node.js runtime, 60s timeout)
 // Proxies the news-guide "AI 심화 검토" button to the Anthropic Claude API.
-//
-// Endpoints:
-//   OPTIONS /api/review   CORS preflight
-//   POST    /api/review   { text: "기사 초안" } → Claude JSON review
-//   GET     /api/review   health check
-//
-// Security:
-//   - Origin must match ALLOWED_ORIGIN env var
-//   - Anthropic API key is read from ANTHROPIC_API_KEY env var
-//   - Simple in-memory rate limit per edge isolate (best-effort)
-//     For production, swap for Upstash Redis or Vercel KV.
 
 import { SYSTEM_PROMPT } from './_prompts.js';
 
-export const config = { runtime: 'edge' };
+export const config = { maxDuration: 60 };
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 
-// In-memory counters — reset per isolate (best-effort abuse prevention)
 const rateLimitStore = new Map();
 
-export default async function handler(request) {
-  const url = new URL(request.url);
+export default async function handler(req, res) {
   const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://hongko534.github.io';
   const model = 'claude-sonnet-4-6';
   const maxInputChars = Number(process.env.MAX_INPUT_CHARS || '10000');
@@ -31,55 +18,54 @@ export default async function handler(request) {
   const rateHour = Number(process.env.RATE_HOUR || '20');
   const rateDay = Number(process.env.RATE_DAY || '100');
 
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.setHeader('Vary', 'Origin');
+
   // CORS preflight
-  if (request.method === 'OPTIONS') {
-    return corsResponse(allowedOrigin, null);
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
 
   // Health check
-  if (request.method === 'GET') {
-    return corsResponse(allowedOrigin, new Response('news-guide-ai (vercel edge) ok', { status: 200 }));
+  if (req.method === 'GET') {
+    return res.status(200).send('news-guide-ai (vercel serverless) ok');
   }
 
-  if (request.method !== 'POST') {
-    return corsResponse(allowedOrigin, new Response('Method Not Allowed', { status: 405 }));
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
   }
 
   // 1. Origin check
-  const origin = request.headers.get('Origin') || '';
+  const origin = req.headers['origin'] || '';
   if (allowedOrigin && origin !== allowedOrigin) {
-    return corsResponse(allowedOrigin, jsonError(403, 'origin_not_allowed', `Origin ${origin} is not allowed`));
+    return res.status(403).json({ error: { code: 'origin_not_allowed', message: `Origin ${origin} is not allowed` } });
   }
 
   // 2. Parse body
-  let body;
-  try {
-    body = await request.json();
-  } catch (e) {
-    return corsResponse(allowedOrigin, jsonError(400, 'bad_json', 'Request body must be JSON'));
-  }
+  const body = req.body;
   const text = (body && typeof body.text === 'string') ? body.text.trim() : '';
   if (!text) {
-    return corsResponse(allowedOrigin, jsonError(400, 'empty_text', 'text field is required and must be non-empty'));
+    return res.status(400).json({ error: { code: 'empty_text', message: 'text field is required and must be non-empty' } });
   }
   if (text.length > maxInputChars) {
-    return corsResponse(allowedOrigin, jsonError(400, 'text_too_long', `text exceeds ${maxInputChars} characters`));
+    return res.status(400).json({ error: { code: 'text_too_long', message: `text exceeds ${maxInputChars} characters` } });
   }
 
-  // 3. Rate limit by client IP (best-effort, per-isolate)
-  const clientIp =
-    request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
-    request.headers.get('X-Real-IP') ||
-    'unknown';
+  // 3. Rate limit
+  const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.headers['x-real-ip'] || 'unknown';
   const limited = checkAndIncrement(clientIp, rateHour, rateDay);
   if (limited) {
-    return corsResponse(allowedOrigin, jsonError(429, 'rate_limited', limited));
+    return res.status(429).json({ error: { code: 'rate_limited', message: limited } });
   }
 
   // 4. Check API key
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return corsResponse(allowedOrigin, jsonError(500, 'not_configured', 'ANTHROPIC_API_KEY env var is not set'));
+    return res.status(500).json({ error: { code: 'not_configured', message: 'ANTHROPIC_API_KEY env var is not set' } });
   }
 
   // 5. Call Anthropic
@@ -108,12 +94,12 @@ export default async function handler(request) {
       body: JSON.stringify(payload),
     });
   } catch (e) {
-    return corsResponse(allowedOrigin, jsonError(502, 'upstream_fetch_failed', String(e)));
+    return res.status(502).json({ error: { code: 'upstream_fetch_failed', message: String(e) } });
   }
 
   if (!upstream.ok) {
     const errText = await upstream.text().catch(() => '');
-    return corsResponse(allowedOrigin, jsonError(upstream.status, 'upstream_error', errText.slice(0, 500)));
+    return res.status(upstream.status).json({ error: { code: 'upstream_error', message: errText.slice(0, 500) } });
   }
 
   const data = await upstream.json();
@@ -128,65 +114,32 @@ export default async function handler(request) {
   try {
     review = JSON.parse(stripCodeFence(assistantText));
   } catch (e) {
-    // 토큰 한도로 JSON이 잘렸을 수 있으므로 복구 시도
     try {
       review = JSON.parse(repairTruncatedJson(stripCodeFence(assistantText)));
     } catch (_) {
-      return corsResponse(allowedOrigin, jsonError(502, 'model_invalid_json', 'AI 응답을 JSON으로 해석하지 못했습니다. 다시 시도해주세요.'));
+      return res.status(502).json({ error: { code: 'model_invalid_json', message: 'AI 응답을 JSON으로 해석하지 못했습니다. 다시 시도해주세요.' } });
     }
   }
 
-  return corsResponse(
-    allowedOrigin,
-    new Response(
-      JSON.stringify({ review, usage: data?.usage || null, model }),
-      { status: 200, headers: { 'Content-Type': 'application/json; charset=UTF-8' } }
-    )
-  );
+  return res.status(200).json({ review, usage: data?.usage || null, model });
 }
 
 // --- helpers ---
 
-function corsResponse(allowedOrigin, innerResponse) {
-  const headers = new Headers(innerResponse ? innerResponse.headers : {});
-  headers.set('Access-Control-Allow-Origin', allowedOrigin || '*');
-  headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
-  headers.set('Access-Control-Allow-Headers', 'Content-Type');
-  headers.set('Access-Control-Max-Age', '86400');
-  headers.set('Vary', 'Origin');
-  if (!innerResponse) return new Response(null, { status: 204, headers });
-  return new Response(innerResponse.body, {
-    status: innerResponse.status,
-    statusText: innerResponse.statusText,
-    headers,
-  });
-}
-
-function jsonError(status, code, message) {
-  return new Response(
-    JSON.stringify({ error: { code, message } }),
-    { status, headers: { 'Content-Type': 'application/json; charset=UTF-8' } }
-  );
-}
-
 function stripCodeFence(text) {
-  // 완전한 코드 펜스 (열기 + 닫기)
   const m = text.match(/^\s*```(?:json)?\s*([\s\S]*?)\s*```\s*$/);
   if (m) return m[1];
-  // 열기만 있고 닫기가 없는 경우 (응답이 잘렸을 때)
   const open = text.match(/^\s*```(?:json)?\s*([\s\S]*)$/);
   if (open) return open[1];
   return text;
 }
 
 function repairTruncatedJson(text) {
-  // JSON 시작점 찾기 (앞에 텍스트가 붙어있을 수 있음)
   let s = text;
   const jsonStart = s.indexOf('{');
   if (jsonStart < 0) return text;
   s = s.slice(jsonStart).trimEnd();
 
-  // JSON 뒤에 붙은 비-JSON 텍스트 제거 (닫힌 후 추가 텍스트)
   let depth = 0, inStr = false, jsonEnd = -1;
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
@@ -197,13 +150,10 @@ function repairTruncatedJson(text) {
   }
   if (jsonEnd > 0) return s.slice(0, jsonEnd + 1);
 
-  // JSON이 잘린 경우: 닫히지 않은 문자열 닫기
   const quotes = (s.match(/"/g) || []).length;
   if (quotes % 2 !== 0) s += '"';
-  // 불완전한 속성 제거
   s = s.replace(/,\s*"[^"]*"\s*:\s*$/, '');
   s = s.replace(/,\s*"[^"]*"\s*:\s*"[^"]*$/, '');
-  // 열린 괄호를 역순으로 닫기
   const stack = [];
   let inStr2 = false;
   for (let i = 0; i < s.length; i++) {
@@ -223,7 +173,6 @@ function checkAndIncrement(ip, hourLimit, dayLimit) {
   const dayBucket = Math.floor(now / 86_400_000);
   const hourKey = `h:${ip}:${hourBucket}`;
   const dayKey = `d:${ip}:${dayBucket}`;
-  // Opportunistic cleanup: drop entries older than current day
   if (rateLimitStore.size > 1000) {
     for (const k of rateLimitStore.keys()) {
       if (!k.endsWith(`:${hourBucket}`) && !k.endsWith(`:${dayBucket}`)) {
