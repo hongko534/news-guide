@@ -390,6 +390,17 @@ body{
   background:var(--bg-elevated);color:var(--text-muted);
   white-space:nowrap;margin-top:2px;
 }
+.ai-issue-actions{display:flex;gap:4px;flex-shrink:0;margin-top:2px}
+.ai-reject-btn{
+  font-size:.7rem;padding:2px 8px;border-radius:10px;cursor:pointer;
+  border:1px solid var(--border);background:var(--bg);color:var(--text-muted);
+  transition:all .15s;white-space:nowrap;
+}
+.ai-reject-btn:hover{border-color:var(--danger);color:var(--danger);background:rgba(239,68,68,.08)}
+.ai-reject-btn.rejected{
+  border-color:var(--danger);color:#fff;background:var(--danger);cursor:default;
+}
+.ai-reject-btn.rejected::after{content:" ✓"}
 .ai-structural-list{list-style:disc;padding-left:20px;margin:0}
 .ai-structural-list li{
   font-size:.85rem;color:var(--text);line-height:1.6;margin-bottom:4px;
@@ -694,7 +705,7 @@ body{
       </div>
       <div class="ai-review-body" id="aiReviewBody">
         <div class="ai-review-loading" id="aiReviewLoading">
-          <span class="ai-review-spinner"></span>분석 중입니다&hellip; 길면 10초 정도 걸릴 수 있습니다.
+          <span class="ai-review-spinner"></span>멀티 패스 심화 분석 중입니다&hellip; 20~30초 정도 걸릴 수 있습니다.
         </div>
       </div>
     </div>
@@ -1654,6 +1665,9 @@ function renderAiReviewResult(review, model){
     return;
   }
   if (model) aiReviewBadge.textContent = model;
+  // 거절 피드백용 이슈 저장
+  _lastAiIssues = review['지적사항'] || review.issues || [];
+  _lastArticleText = originalText || '';
 
   var html = '';
 
@@ -1704,6 +1718,9 @@ function renderAiReviewResult(review, model){
       if (expl) html += '<div class="ai-issue-explanation">' + escapeHtml(expl) + '</div>';
       html += '</div>';
       if (typ) html += '<div class="ai-issue-type">' + escapeHtml(typ) + '</div>';
+      html += '<div class="ai-issue-actions">';
+      html += '<button class="ai-reject-btn" data-idx="' + i + '" onclick="rejectAiIssue(this,' + i + ')" title="이 지적이 부적절하다고 판단되면 클릭하세요">부적절</button>';
+      html += '</div>';
       html += '</li>';
     }
     html += '</ul>';
@@ -1724,6 +1741,60 @@ function renderAiReviewResult(review, model){
   aiReviewBody.innerHTML = html;
 }
 
+// ── 지적사항 거절 피드백 ──
+var _lastAiIssues = [];
+var _lastArticleText = '';
+
+function rejectAiIssue(btn, idx) {
+  if (btn.classList.contains('rejected')) return;
+  btn.classList.add('rejected');
+  btn.textContent = '부적절';
+
+  var issue = _lastAiIssues[idx];
+  if (!issue) return;
+
+  var feedback = {
+    action: 'reject',
+    issue: {
+      type: issue['유형'] || issue.type,
+      severity: issue['심각도'] || issue.severity,
+      original: issue['원문'] || issue.original,
+      suggestion: issue['제안'] || issue.suggestion,
+      explanation: issue['설명'] || issue.explanation,
+    },
+    articleSnippet: (_lastArticleText || '').slice(0, 200),
+    timestamp: new Date().toISOString(),
+  };
+
+  // 로컬 저장 (누적)
+  var stored = JSON.parse(localStorage.getItem('ai_rejections') || '[]');
+  stored.push(feedback);
+  if (stored.length > 200) stored = stored.slice(-200);
+  localStorage.setItem('ai_rejections', JSON.stringify(stored));
+
+  // 서버 전송 (비동기, 실패 무시)
+  fetch(AI_WORKER_URL.replace('/review', '/feedback'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(feedback),
+  }).catch(function(){});
+}
+
+function getRecentRejections() {
+  var stored = JSON.parse(localStorage.getItem('ai_rejections') || '[]');
+  // 최근 50건만, 중복 패턴 제거
+  var seen = {};
+  var unique = [];
+  for (var i = stored.length - 1; i >= 0 && unique.length < 20; i--) {
+    var key = (stored[i].issue.type || '') + ':' + (stored[i].issue.original || '').slice(0, 30);
+    if (!seen[key]) {
+      seen[key] = true;
+      unique.push(stored[i].issue);
+    }
+  }
+  return unique;
+}
+
 async function runAiReview(){
   if (!originalText || !originalText.trim()) {
     alert('먼저 기사를 입력하고 교정하세요.');
@@ -1738,14 +1809,14 @@ async function runAiReview(){
 
   aiReviewBtn.disabled = true;
   aiReviewSection.classList.remove('hidden');
-  aiReviewBody.innerHTML = '<div class="ai-review-loading"><span class="ai-review-spinner"></span>분석 중입니다&hellip; 길면 10초 정도 걸릴 수 있습니다.</div>';
+  aiReviewBody.innerHTML = '<div class="ai-review-loading"><span class="ai-review-spinner"></span>멀티 패스 심화 분석 중입니다&hellip; 20~30초 정도 걸릴 수 있습니다.</div>';
   setTimeout(function(){ aiReviewSection.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, 30);
 
   try {
     var resp = await fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: originalText }),
+      body: JSON.stringify({ text: originalText, rejections: getRecentRejections() }),
     });
     var data = null;
     try { data = await resp.json(); } catch(_) {}
